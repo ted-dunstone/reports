@@ -1,0 +1,31 @@
+api_key: ''
+auth:
+  code: '432'
+  email: ted@biometix.com
+  first_name: Ted
+  last_name: Dunstone
+  organization: Biz2
+author: Biometix
+classification: Commercial in Confidential
+contact: Ted Dunstone
+contact_email: ted@biometix.com
+contact_phone: +61 (2) 419990968
+country_or_region: Px 1
+date: 5th March 2020
+demo_report_type: Covid
+email_address: ted@biometix.com
+geometry: a4paper
+keywords: '[biometrics]'
+mustache: tmp_vars.yaml
+news: covid id border
+prefilled_url: https://docs.google.com/forms/d/e/1FAIpQLSf3vmZGV-ctCzHpnjqBUM19bP89YTl96bR-tm1WzFxIimt3rg/viewform?usp=pp_url&entry.238080870=Covid&entry.1498296904=VTJGc2RHVmtYMSsvK3dUK2VMTFdnNkJmUmpTZEhTa215RzA0ZVhGaFBkTFNJUUZJU21BMjRFOFdiVXFpR09YeUZaRk9VNjQ0d2pEcXQrNEdFMVFhZlhQb3o2Qmt1YWRjd25PWm0yaTVOdWVTbzY1eG9JZTIrdGZ6bTE3ZmJZT09KZU1RcDZ0dnZUVTFoME4vQ3pZRkJFMmpYa1FZMm1ENHBRPT0%3D&entry.316079775=Px+1&entry.753773068=Fills+in?&entry.130141439=2020-04-13&entry.1000027=Blah&entry.967112212=color+1&entry.967112212=color+2&entry.967112212=color+3
+product_options: ''
+query: corona virus
+subtitle: Fills in?
+title: Covid-19 Impact Report New
+what_colors_would_you_like_to_order:
+- color 1
+- color 2
+- color 3
+what_day: '2020-04-13'
+what_is_the_item_you_would_like_to_order: Blah

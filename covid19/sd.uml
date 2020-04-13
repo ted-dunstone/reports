@@ -1,0 +1,405 @@
+@startwbs
+<style>
+' this time, scoping to wbsDiagram
+wbsDiagram {
+  
+  ' Here we introduce a global style, i.e. not targeted to any element
+  ' thus all lines (meaning connector and borders, 
+  ' there are no other lines in WBS) are black by default
+  Linecolor black
+  BackGroundColor white
+  
+  ' But we can also target a diagram specific element, like arrow
+   arrow {
+	' note that Connectors are actually "Arrows"; this may change in the future
+	' so this means all Connectors and Arrows are now going to be green
+	LineColor green
+  }
+  
+}
+</style>
+' all lines (i.e. arrow) are green,
+' because the narrow scoped "arrow" overrides the global
+
+
+
+* World
+** Wow:
+*** clearview
+*** enforcement
+*** 550m
+** Cluster 1:
+*** face
+*** recognition
+*** facial
+*** masks
+** Cluster 2:
+*** surveillance
+*** coronavirus
+*** state
+*** china
+*** enabling
+** Cluster 3:
+*** london
+*** police
+*** fellow
+*** live
+*** tech
+** Cluster 4:
+*** facebook
+*** million
+*** privacy
+** Cluster 5:
+*** time
+*** tech
+*** india
+*** protests
+@endwbs
+
+# this is a test
+
+@startuml
+start
+:Hello world;
+:This is defined on
+several **lines**;
+stop
+@enduml
+
+@startmindmap
+caption figure 1
+title My super title
+
+* <&flag>Debian
+** <&globe>Ubuntu
+*** Linux Mint
+*** Kubuntu
+*** Lubuntu
+*** KDE Neon
+** <&graph>LMDE
+** <&pulse>SolydXK
+** <&people>SteamOS
+** <&star>Raspbian with a very long name
+*** <s>Raspmbc</s> => OSMC
+*** <s>Raspyfi</s> => Volumio
+
+header
+My super header
+endheader
+
+center footer My super footer
+
+legend right
+  Short
+  legend
+endlegend
+@endmindmap
+
+
+@startmindmap
+
+caption figure 1
+title My super title
+
+* corona virus
+** 2003 SARS outbreak
+** 2012 Middle East respiratory syndrome coronavirus outbreak
+** 2015 Middle East respiratory syndrome outbreak in South Korea
+** 2018 Middle East respiratory syndrome outbreak
+** 2019–20 coronavirus outbreak
+** 2019–20 coronavirus pandemic
+** Acute bronchitis
+** Adenoid
+** Adenoviridae
+** Adenovirus infection
+** Adult T-cell leukemia/lymphoma
+** Alphacoronavirus
+** Anal cancer
+** Ancient Greek
+** Angiotensin-converting enzyme 2
+** Anorexia (symptom)
+** Antiviral drug
+** Arbovirus encephalitis
+** Astrovirus
+** Avian infectious bronchitis
+** Avian infectious bronchitis virus
+** Avian influenza
+** BK virus
+** Bacterial pneumonia
+** Bat-borne virus
+** Bead
+** Beluga whale coronavirus SW1
+** Betacoronavirus
+** Betacoronavirus 1
+** Bibcode
+** Birds
+** Bovine coronavirus
+** Bronchiolitis
+** Bronchitis
+** Bulbul coronavirus HKU11
+** Burkitt's lymphoma
+** Canine coronavirus
+** Capsid
+** Cardiovascular disease
+** Central nervous system viral disease
+** Cervical cancer
+** Chandipura vesiculovirus
+** China
+** Cis-acting
+** Civet
+** Common cold
+** Complication (medicine)
+** Corona
+** Coronaviridae
+** Coronavirus disease 2019
+** Cough
+** Coxsackie B virus
+** Croup
+** Cytomegalovirus
+** Cytomegalovirus esophagitis
+** Cytomegalovirus retinitis
+** Cytoplasm
+** DNA replication
+** DNA virus
+** Deltacoronavirus
+** Diarrhea
+** Digital object identifier
+** Dyspnea
+** Electron microscopy
+** Embecovirus
+** Encapsidation
+** Encephalitis lethargica
+** Encyclopedia of Life
+** Endoplasmic reticulum
+** Enterovirus
+** Enveloped virus
+** Epstein–Barr virus
+** Epstein–Barr virus infection
+** Erasmus MC
+** Esophagus
+** European rabbits
+** Exocytosis
+** Exoribonuclease
+** Extranodal NK/T-cell lymphoma, nasal type
+** Eye disease
+** Fatigue (medical)
+** Feline coronavirus
+** Feline infectious peritonitis
+** Ferret
+** Fever
+** Five-prime cap
+** Follicular dendritic cell sarcoma
+** GB virus C
+** Gammacoronavirus
+** Gastroenteritis
+** Gastrointestinal tract
+** Genitourinary system
+** Genome
+** Genome size
+** HIV
+** HIV/AIDS
+** HPV-positive oropharyngeal cancer
+** Harderian gland
+** Headache
+** Hedgehog coronavirus 1
+** Hemagglutinin esterase
+** Hepacivirus C
+** Hepatitis A
+** Hepatitis B
+** Hepatitis B virus
+** Hepatitis C
+** Hepatitis D
+** Hepatitis E
+** Hepatocellular carcinoma
+** Herpes simplex keratitis
+** Herpes simplex virus
+** Herpesviral meningitis
+** Hipposideridae
+** Hodgkin's lymphoma
+** Host (biology)
+** Host tropism
+** Human T-lymphotropic virus 1
+** Human coronavirus 229E
+** Human coronavirus HKU1
+** Human coronavirus NL63
+** Human coronavirus OC43
+** Human digestive system
+** Human metapneumovirus
+** Human orthopneumovirus
+** Human parainfluenza viruses
+** Human polyomavirus 2
+** ICD-10
+** ICD-10 Chapter I: Certain infectious and parasitic diseases
+** Immune disorder
+** Incertae sedis
+** Infection
+** Infectious bronchitis virus
+** Infectious mononucleosis
+** Infectivity
+** Influenza
+** Influenza A virus
+** Influenza B virus
+** Influenza C virus
+** Influenza D virus
+** Interim Register of Marine and Nonmarine Genera
+** International Committee on Taxonomy of Viruses
+** International Standard Book Number
+** International Statistical Classification of Diseases and Related Health Problems
+** Intestinal
+** Kaposi's sarcoma
+** Kaposi's sarcoma-associated herpesvirus
+** Kilobase
+** Lipid bilayer
+** List of ICD-9 codes 001–139: infectious and parasitic diseases
+** Lower respiratory tract infection
+** Lymphocytic choriomeningitis
+** MERS-CoV
+** Malaise
+** Mammals
+** Measles morbillivirus
+** Merkel-cell carcinoma
+** Merkel cell polyomavirus
+** Messenger RNA
+** Middle East respiratory syndrome
+** Middle East respiratory syndrome-related coronavirus
+** Miniopterus bat coronavirus 1
+** Miniopterus bat coronavirus HKU8
+** Misinformation related to the 2019–20 coronavirus outbreak
+** Morbidity
+** Morphology (biology)
+** Most recent common ancestor
+** Mouse hepatitis virus
+** Multiple sclerosis
+** Mumps
+** Mumps rubulavirus
+** Murinae
+** Murine coronavirus
+** Mutation
+** Myalgia
+** Myelitis
+** Myocarditis
+** Nasal cavities
+** Nasal congestion
+** Nasopharyngeal carcinoma
+** National Center for Biotechnology Information
+** Nidovirales
+** Norovirus
+** Nucleic acid secondary structure
+** Nucleocapsid
+** Oncovirus
+** Orthohepevirus A
+** Orthomyxoviridae
+** Otitis media
+** Outbreaks
+** Pancreatitis
+** Papillomaviridae
+** Paramyxoviridae
+** Penile cancer
+** Peplomer
+** Pericarditis
+** Pharyngitis
+** Pharynx
+** Pipistrellus bat coronavirus HKU5
+** Pleconaril
+** Pleomorphism (cytology)
+** Pneumonia
+** Polio
+** Poliovirus
+** Polyadenylation
+** Popular Science
+** Porcine
+** Porcine coronavirus HKU15
+** Porcine epidemic diarrhea virus
+** Positive-sense single-stranded RNA virus
+** Post-polio syndrome
+** Progressive multifocal leukoencephalopathy
+** Proofreading (biology)
+** Protease
+** Protein
+** Protein complex
+** Proteins
+** Proteolysis
+** PubMed Central
+** PubMed Identifier
+** RNA
+** RNA-dependent RNA polymerase
+** RNA virus
+** Rabies
+** Rabies virus
+** Ramsay Hunt syndrome type 2
+** Reading frame
+** Republic of Korea
+** Respiratory system
+** Respiratory tract infection
+** Respiratory tract infections
+** Rhinolophidae
+** Rhinolophus bat coronavirus HKU2
+** Rhinorrhea
+** Rhinovirus
+** Ribosome
+** Riboviria
+** Rotavirus
+** Rousettus bat coronavirus HKU9
+** SARS-CoV-2
+** SARS conspiracy theory
+** SARS coronavirus
+** Science (journal)
+** Scotophilus bat coronavirus 512
+** Severe acute respiratory syndrome
+** Severe acute respiratory syndrome-related coronavirus
+** Severe acute respiratory syndrome coronavirus
+** Severe acute respiratory syndrome coronavirus 2
+** Sinusitis
+** Sneeze
+** Solar corona
+** Sore throat
+** Splenic marginal zone lymphoma
+** Streptococcal pharyngitis
+** Subacute sclerosing panencephalitis
+** Susan Baker (virologist)
+** Swine acute diarrhea syndrome coronavirus
+** Symptom
+** Synonym (taxonomy)
+** The New York Times
+** Tissue tropism
+** Transcription (biology)
+** Transmissible gastroenteritis coronavirus
+** Transmission (medicine)
+** Transmission electron microscopy
+** Tropical spastic paraparesis
+** Tropism
+** Tunisia
+** Turkey coronavirus
+** Turkeys
+** Tylonycteris bat coronavirus HKU4
+** Uncoating
+** Upper respiratory tract
+** Upper respiratory tract infection
+** Urogenital tract
+** Vaccine
+** Vaginal cancer
+** Vesicular-tubular cluster
+** Veterinary medicine
+** Viral disease
+** Viral encephalitis
+** Viral entry
+** Viral envelope
+** Viral hepatitis
+** Viral meningitis
+** Viral pathogenesis
+** Viral pneumonia
+** Viral shedding
+** Virion
+** Virologist
+** Virus
+** Virus classification
+** Vulvar cancer
+** Wayback Machine
+** Weakness
+** Wikidata
+** Wikispecies
+** World Health Organization
+** Wuhan
+** Zoonosis
+** Zoonotic
+@endmindmap
