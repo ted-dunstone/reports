@@ -1,0 +1,30 @@
+_auth:
+  email: ted@biometix.com
+  first_name: Rachel
+  last_name: Dunstone
+  organization: Australian Government
+_run_count: 1
+_run_first: Tue Apr 14 02:55:08 2020
+_run_last: Tue Apr 14 02:55:08 2020
+_script:
+  id: simple
+  name: Simple
+  title: Performix Analytics
+  type: report
+api_key: ''
+author: Biometix
+classification: Commercial in Confidential
+contact: Ted Dunstone
+contact_email: ted@biometix.com
+contact_phone: +61 (2) 419990968
+date: 5th March 2020
+demo_report_type: Simple
+describe_below_what_type_of_analytics_you_would_be_interested_in: ''
+keywords: '[biometrics]'
+mustache: tmp_vars.yaml
+news: covid id border
+prefilled_url: https://docs.google.com/forms/d/e/1FAIpQLSf3vmZGV-ctCzHpnjqBUM19bP89YTl96bR-tm1WzFxIimt3rg/viewform?usp=pp_url&entry.238080870=Simple&entry.1498296904=VTJGc2RHVmtYMS9XVEtGb25ic2sxSG9IQmplcWtVS1VuUnBSZDIvRWErMXBBRk5UakpRTWRvb05UdUNOMnF2YWNGcUl6WnJWMXA1V0dOZVlDRDhzUUVrUlhrSnBkRURKOEdCRm1qdy9qUEVSeUo1MS9ZS1k5R3VxMHlONWxQcnUwNUwzY2VQYVZkZ2RhSTNiOWtkWVdHZGxWc3E4UkpZMnhWWUI3QlhMVFlJPQ%3D%3D
+query: corona virus
+subtitle: Estimates of Covid-19 Impact for Singapore
+title: Covid-19 Impact Report New
+what_industry_or_area_this_relevant_for: ''

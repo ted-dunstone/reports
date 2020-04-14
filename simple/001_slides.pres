@@ -5,6 +5,7 @@
 
 - Eat eggs
 - Drink coffee
+- {{_auth.email}}
 - {{subtitle}}
 
 ## Symptoms
@@ -19,7 +20,7 @@ test
 
 ## {{query}}
 
-eps
+EPS
 
 ## This slide has columns
 
