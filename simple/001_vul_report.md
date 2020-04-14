@@ -6,4 +6,4 @@ This is the exec summary ...
 
 **{{title}}**
 
-Covid 19
+Simple Report
