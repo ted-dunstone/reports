@@ -18,7 +18,7 @@ To integrate with the performix docker solution create a subdirectory `report` u
 
 Assuming the docker environment is setup you can run:
 
-`sh build_doc.sh report/sample`
+`./build_doc.sh report/samples/simple`
 
 This will build a pdf and a ppt.
 
