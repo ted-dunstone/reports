@@ -1,6 +1,6 @@
 # Main Parameters
 title: Performix Technical Users Manual
-subtitle:  Design and Usage Information for Techncial Users of Performix
+subtitle:  Design and Usage Information for Techncial Users
 author: Biometix
 date: 5th March 2020
 keywords: '[analytics]'
@@ -11,5 +11,6 @@ contact_email: ted@biometix.com
 classification: Commercial in Confidential
 # Report Specific Params
 
-End_Customer: Biometix
+customer: Biometix
+query: 123
 

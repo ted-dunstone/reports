@@ -1,0 +1,18 @@
+@startuml
+skinparam shadowing false
+skinparam foregroundColor #EEEEEE
+
+start
+
+:Are there sufficient
+//governance// procedures
+in place that will ensure
+that citizens rights are
+protected;
+
+
+stop
+
+
+
+@enduml
