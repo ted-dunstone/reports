@@ -1,6 +1,8 @@
 # PxReport Samples
 
-This is the biometix performix reports directory. It contains examples of reports that can be used with performix. Additional reports can be simply built by cloning one of these repositories.
+This is the biometix performix reports directory. It contains examples of reports that can be used with performix. Additional reports can be simply built by using one of these directories as a base.
+
+**TODO**: More examples will be added soon.
 
 **Please help to keep these instructions up to date**
 
