@@ -21,9 +21,7 @@ The main report parameters are found in the `params.yaml` file. An example for t
 
     end_customer: Biometix
 
-\begin{tipblock}
-There is a sensitivity to line length of those fields that are used in the Latex template. This include title and subtitle. See the FAQ for more details
-\end{tipblock}
+\cautionbox{There is a sensitivity to line length of those fields that are used in the Latex template. This include title and subtitle. See the FAQ for more details}
 
 There are three main types of information:
 
