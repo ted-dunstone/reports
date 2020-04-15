@@ -8,7 +8,7 @@ def test_draw(img,d,text=["title","subtitle"],
                 colour=(255,255,255,255)):
     #for txt,loc,size in zip(text,locations,sizes):
     #    d.text(loc, txt, font=get_font(size), fill=colour)
-    
+    return
     images = [im for im in WikipediaManager().query(
         #fetch_query()
         "mastercard"
