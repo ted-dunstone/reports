@@ -13,8 +13,8 @@ To integrate with the performix docker solution create a subdirectory `report` u
 * px-build-doc
  * report
    * samples
-   * covid19
-   ...
+     * covid19
+     ...
 
 ## Running a report
 
