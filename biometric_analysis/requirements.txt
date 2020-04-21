@@ -1,0 +1,9 @@
+pandas
+numpy
+sklearn
+scipy
+matplotlib
+seaborn
+pytablewriter
+ipython
+bson
