@@ -44,9 +44,7 @@ def print_performance(roc_results, ft, errors):
         errors.append(f"For {ft} type, unable to print performance analysis due to exception: {ex}")
 
 def print_match_dist(matches, non_matches, threshold, ft, errors):
-    display_text = ""
-    match_img_fn = 'match.png'
-
+    
     try:
         print(dedent("""      
             * Count of Matches: **%s**
@@ -56,32 +54,32 @@ def print_match_dist(matches, non_matches, threshold, ft, errors):
             len(non_matches)
             )))
 
-        fig = plot_match_dist_mpl(matches, non_matches, threshold=threshold)
-        fig.savefig(match_img_fn,dpi=250)
-        print(figs.fig_latex(match_img_fn, "Match Distribution"))
+        plot_match_dist_mpl(matches, non_matches, threshold=threshold)
+        plt.show()
+        figs.save_plot( "Match Distribution",height=9).display()
     except Exception as ex:
         errors.append(f"Unable to output Distribution Plot due to exception: {ex}")
 
 def print_acc_plot(roc_results, roc_res_adjust=None, label='', is_verification=True, rankone=False, errors=[]):
-    roc_img_fn = 'roc_new.png'
     try:
         roc_res_adj_dict = roc_res_adjust.to_dict() if roc_res_adjust is not None else None
-        fig = plot_acc_res(roc_results.to_dict(), roc_res_adj_dict, label, is_verification, rankone)
-        fig.savefig(roc_img_fn,dpi=250)
+        plot_acc_res(roc_results.to_dict(), roc_res_adj_dict, label, is_verification, rankone)
+        
         title = "Reciever Operating Curve"
         if rankone:
             title = "Alarm Curve"
-        print(figs.fig_latex(roc_img_fn, title))
+        plt.show()
+        figs.save_plot(title,height=7).display()
     except Exception as ex:
         errors.append(f"For {label} type, unable to output ROC plot due to exception: {ex}")
 
 def print_cmc_curve(data, table, ft, errors):
     try:
         fig = plot_CMC_mpl(data[[c_rank, c_score, c_truth]], table[c_rank], table['identification rate'], c_rank, c_score, c_truth)
-        cmc_img_fn = "cmc.png"
-        fig.savefig(cmc_img_fn,dpi=250)
-        print(figs.fig_latex(cmc_img_fn,"Cumulative Matching Curve"))
-        tables.read_df(table).display("Identification Results by Rank")
+        plt.show()
+        figs.save_plot("Cumulative Matching Curve",height=9).display()
+
+        #tables.read_df(table).display("Identification Results by Rank")
     except Exception as ex:
         errors.append(f"For {ft} type, unable to output CMC plot due to exception: {ex}")
 

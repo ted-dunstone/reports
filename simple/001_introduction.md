@@ -17,3 +17,4 @@ See table \ref{features_table}.
 Table: Performix Features \label{features_table}
 
 ![Decision Tree](temp/decision_tree.eps)
+

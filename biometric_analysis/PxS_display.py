@@ -60,7 +60,7 @@ def plot_match_dist_mpl(match_scores, non_match_scores, threshold=None, match_co
     if labels_on:
         plt.legend(loc='upper left',fontsize=15)
     fig = plt.gcf()
-    plt.close()
+    #plt.close()
     return fig #return the axis
 
 # Accuracy Plot Support Functions
@@ -195,5 +195,5 @@ def plot_CMC_mpl(data, xvals, cdf, rank_col='rank', score_col='score', truth_col
     plt.xticks(xvals)
     plt.grid(True,linestyle=':',linewidth=0.5)
     fig = plt.gcf()
-    plt.close()
+    #plt.close()
     return fig
