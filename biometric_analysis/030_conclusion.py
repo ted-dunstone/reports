@@ -3,7 +3,7 @@ import pandas as pd
 from px_build_doc.util import display, fetch_var, TableManager
 import data
 
-_, _, results, _, _, _ = data.get()
+_, results, _ = data.get()
 
 tables = TableManager()
 

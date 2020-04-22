@@ -2,12 +2,13 @@ from textwrap import dedent
 from px_build_doc.util import display, fetch_var, TableManager
 import data
 
-data_df, col, _, outliers, _, _ = data.get()
+_, _, outliers = data.get()
 
 tables = TableManager()
 
 finger_types = fetch_var("finger_types")
 
+col = fetch_var("column_names")
 c_pid = col['pid']
 c_gid = col['gid']
 c_rank = col['rank']

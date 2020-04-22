@@ -7,8 +7,9 @@ import data
 import matplotlib.pyplot as plt
 plt.rcParams['font.family'] = 'serif'
 
-data_df, col, results, _, _, params = data.get()
+_, results, _ = data.get()
 
+col = fetch_var("column_names")
 c_pid = col['pid']
 c_gid = col['gid']
 c_rank = col['rank']
@@ -107,7 +108,7 @@ errors = []
 for ft in finger_types:
     dres = results[ft]
     
-    display(f"# {params.label} type {ft}")
+    display(f"# {fetch_var('label')} type {ft}")
     
     print_test_info(dres.nr_probes)
     
