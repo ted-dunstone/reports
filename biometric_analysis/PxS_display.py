@@ -158,7 +158,7 @@ def plot_acc_res(roc_results, roc_res_adjust=None, label='', is_verification=Tru
     """
     
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6), dpi=80)
-    plt.close()
+    #plt.close()
     
     roc_res = {f"{label}": roc_results}
     if roc_res_adjust is not None:
