@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from textwrap import dedent
 import data
+from px_build_doc.util import display, FigureManager
 
 _, _, _, _, mets, params = data.get(reload_data=True)
 
@@ -22,4 +23,6 @@ for m in ["unique_probes","max_length","min_length","total_matches","total_non_m
         pvars[m]=str(mets[m])
 
 update_vars(pvars)
+
+
 
