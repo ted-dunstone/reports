@@ -6,6 +6,8 @@ import yaml
 import os
 import pickle
 import pandas as pd
+from datetime import datetime, timedelta
+from px_build_doc.util import update_vars, fetch_vars, fetch_var
 
 def read_variables_yaml(fn):
     if os.path.isfile(fn):
@@ -239,8 +241,8 @@ def calc_summary(data_df, col, is_identification):
     return {**can_mets, **count_mets, **score_mets}
 
 
-def get_data(truth_data_path, job_data_path, analysis_path):
-    params = Params(analysis_path)
+def get_data(truth_data_path, job_data_path, params):
+    # params = Params(analysis_path)
 
     data_df, col, errors = read_data(truth_data_path, job_data_path, {
             'pid':params.truth_probe_col,
@@ -270,28 +272,46 @@ def get_data(truth_data_path, job_data_path, analysis_path):
 
 def get(reload_data=False):
     doc_params = read_variables_yaml("params.yaml")
-    params = Params(doc_params['analysis_file'])
-
     base_path = os.path.splitext(doc_params['results_file'])[0]
     data_pkl = base_path+'_data_df.pkl'
-    col_pkl = base_path+'_column_names.pkl'
     results_pkl = base_path+'_results.pkl'
     outliers_pkl = base_path+'_outliers.pkl'
-    metrics_pkl = base_path+'_metrics.pkl'
+    
+    try:
+        data_loaded = fetch_var("data_loaded")
+    except:
+        data_loaded = False
 
-    if not os.path.isfile(data_pkl) or not os.path.isfile(col_pkl) or not os.path.isfile(results_pkl) or not os.path.isfile(outliers_pkl) or not os.path.isfile(metrics_pkl) or reload_data:
-        data_df, col, results, outliers, metrics = get_data(doc_params['truth_file'], doc_params['results_file'], doc_params['analysis_file'])
+    if not data_loaded or reload_data:
+        params = Params(doc_params['analysis_file'])
+        data_df, col, results, outliers, metrics = get_data(doc_params['truth_file'], doc_params['results_file'], params)
         data_df.to_pickle(data_pkl)
-        pickle.dump(col, open(col_pkl, "wb"))
         pickle.dump(results, open(results_pkl, "wb"))
         pickle.dump(outliers, open(outliers_pkl, "wb"))
-        pickle.dump(metrics, open(metrics_pkl, "wb"))
-        return data_df, col, results, outliers, metrics, params
+
+        date = datetime.today().strftime('%d %B %Y')
+        finger_types = get_finger_types(data_df, col, params.show_types)
+        pvars= {"data_type":params.data_type, 
+                "test_type":params.test_type, 
+                "label":params.label,
+                "date":date, 
+                "column_names":col,
+                "finger_types":finger_types
+                }
+
+        for m in ["unique_probes","max_length","min_length","total_matches","total_non_matches","total_nr","min_pos_score","max_neg_score","pos_score_05","pos_score_95","neg_score_05","neg_score_95","nr_pos_eo","nr_neg_eo"]:
+            if isinstance(metrics[m], np.float64):
+                pvars[m]="%.2f"%metrics[m]
+            else:
+                pvars[m]=str(metrics[m])
+
+        pvars["data_loaded"] = True
+        update_vars(pvars)
+
+        return data_df, results, outliers
     else:
         data_df = pd.read_pickle(data_pkl)
-        col = pickle.load(open(col_pkl, "rb"))
         results = pickle.load(open(results_pkl, "rb"))
         outliers = pickle.load(open(outliers_pkl, "rb"))
-        metrics = pickle.load(open(metrics_pkl, "rb"))
-        return data_df, col, results, outliers, metrics, params
+        return data_df, results, outliers
 
