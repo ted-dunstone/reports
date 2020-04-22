@@ -1,13 +1,13 @@
 from textwrap import dedent
 from PxS_display import plot_match_dist_mpl, plot_acc_res, plot_CMC_mpl
 #from pxlib.util.display import plot_score_box
-from px_build_doc.util import FigureManager, TableManager
+from px_build_doc.util import FigureManager, TableManager, fetch_var, display
 import data
 
 import matplotlib.pyplot as plt
 plt.rcParams['font.family'] = 'serif'
 
-data_df, col, results, outliers, metrics, params = data.get()
+data_df, col, results, _, _, params = data.get()
 
 c_pid = col['pid']
 c_gid = col['gid']
@@ -22,7 +22,7 @@ tables = TableManager()
 
 #Display functions
 def print_test_info(test_size):
-    print(dedent("""
+    display(dedent("""
         Test Size: *%d* probes
     """%(test_size)))
 
@@ -33,7 +33,7 @@ def print_performance(roc_results, ft, errors):
             fpr_t = roc_results.fpr_thresh
             tpr_t = roc_results.tpr_thresh
             fnr_t = roc_results.fnr_thresh
-            print(dedent("""
+            display(dedent("""
                 ## Performance at the threshold of *%.1f*
 
                 * False Positive Rate: *%2.2f* %%
@@ -46,7 +46,7 @@ def print_performance(roc_results, ft, errors):
 def print_match_dist(matches, non_matches, threshold, ft, errors):
     
     try:
-        print(dedent("""      
+        display(dedent("""      
             * Count of Matches: **%s**
             * Count of Non-Matches: **%s**
         """%(
@@ -92,13 +92,13 @@ def print_cmc_curve(data, table, ft, errors):
 #         plt.tight_layout()
 #         plt.savefig(bp_img_fn)
 #         plt.close()
-#         print(figs.fig_latex(bp_img_fn,"Rank vs Score"))
+#         display(figs.fig_latex(bp_img_fn,"Rank vs Score"))
 #     except Exception as ex:
 #         errors.append(f"For {ft} type, unable to output score boxplot (may be incomplete rank information) due to exception: {ex}")
 
 
 
-finger_types = data.get_finger_types(data_df, col, params.show_types)
+finger_types = fetch_var("finger_types")
 is_identification = True #TODO implement way to identify identification
 is_verification = not is_identification
 errors = []
@@ -107,59 +107,59 @@ errors = []
 for ft in finger_types:
     dres = results[ft]
     
-    print(f"# {params.label} type {ft}")
+    display(f"# {params.label} type {ft}")
     
     print_test_info(dres.nr_probes)
     
     print_performance(dres.accuracy_results, ft, errors)
     
-    print("## Analysis")
+    display("## Analysis")
     
-    print("### Match distribution")
-    print(dedent("""
+    display("### Match distribution")
+    display(dedent("""
         The match distribution shows the frequency of matches and non matches versus the threshold.
     """))
     print_match_dist(dres.match_scores, dres.non_match_scores, dres.threshold, ft, errors)
     
-    print("### Accuracy")
+    display("### Accuracy")
     if dres.accuracy_results.auc == 1:
-        print("Non-Match and match results have no overlap. There are hence no errors at an optimal threshold.")
+        display("Non-Match and match results have no overlap. There are hence no errors at an optimal threshold.")
     else:
         #ROC curve
-        print(dedent("""
+        display(dedent("""
             The ROC Curve below shows the change in accuracy (verification rate vs false accept) as the threshold is changed. The graph on the right shows the changes to the individual error rates with respect to the score.
             Note the accuracy is calculated using the available data provided which does not account for the full gallery size. As a consequence the evaluated accuracy rate here is likely to be worse than the true accuracy rate.
         """))
         if dres.gallery_size is not None:
-            print(dedent("""
+            display(dedent("""
                 The graphs below show an accuracy adjusted curve using the gallery size provided.
             """))
         print_acc_plot(dres.accuracy_results, dres.ac_res_gallery_adjusted, label=f'{dres.label} {dres.dtype}', rankone=False, is_verification=is_verification)
-        print(dedent("""
+        display(dedent("""
             The following table shows false non-match rates and gallery adjusted values (if calculated) as evaluated at specific false match rates using the ROC curve.
         """))
         tables.read_df(dres.accuracy_table).display("False Match vs False Non-Match")
         
         #Alarm curve
         if is_identification:
-            print(dedent("""
+            display(dedent("""
                 The Alarm Curve shows accuracy rate for the rank 1 results. This corresponds to how often the system would falsely alarm with the highest matching result for different thresholds.
             """))
             print_acc_plot(dres.alarm_results, dres.alarm_gallery_adjusted, label=f'{dres.label} {dres.dtype}', rankone=True, is_verification=is_verification)
-            print(dedent("""
+            display(dedent("""
                 The following table shows false non-match rates and gallery adjusted values (if calculated) as evaluated at specific false match rates using the Alarm curve.
             """))
             tables.read_df(dres.alarm_table).display("False Match vs False Non-Match")
 
     if is_identification:
-        print("### Cumulative Match Curve")
-        print(dedent("""
+        display("### Cumulative Match Curve")
+        display(dedent("""
             The Cumulative Match Curve shows the identification as a function of the rank (or candidate list size). The plot below displays the match and non-match scores versus the rank (shaded area shows the distribution range).
         """))
         print_cmc_curve(dres.data, dres.cmc_table, ft, errors)
     
-        # print("### Rank versus Score Box Plot")
-        # print(dedent("""
+        # display("### Rank versus Score Box Plot")
+        # display(dedent("""
         #     The Rank versus Score Box Plot shows a box plot of the match (truth=1) and non-match (truth=0) score ranges versus rank. The dotted line represents the set threshold.
         # """))
         # print_score_box(dres.data, dres.threshold, ft, errors)

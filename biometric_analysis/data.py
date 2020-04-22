@@ -6,6 +6,7 @@ import yaml
 import os
 import pickle
 import pandas as pd
+from px_build_doc.util import update_vars
 
 def read_variables_yaml(fn):
     if os.path.isfile(fn):
@@ -260,6 +261,8 @@ def get_data(truth_data_path, job_data_path, analysis_path):
     is_identification = True
     finger_types = get_finger_types(data_df, col, params.show_types)
 
+    update_vars({"finger_types":finger_types})
+
     results = calc_results_main(data_df, col, params.threshold, params.gallery_size, params.fpr_arry,is_identification,finger_types)
 
     outliers = calc_outliers(data_df, col, finger_types)
@@ -293,5 +296,8 @@ def get(reload_data=False):
         results = pickle.load(open(results_pkl, "rb"))
         outliers = pickle.load(open(outliers_pkl, "rb"))
         metrics = pickle.load(open(metrics_pkl, "rb"))
+        finger_types = get_finger_types(data_df, col, params.show_types)
+        update_vars({"finger_types":finger_types})
+        #update_vars({"column_names":col})
         return data_df, col, results, outliers, metrics, params
 
