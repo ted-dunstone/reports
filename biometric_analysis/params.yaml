@@ -12,3 +12,5 @@ contact_email: e.kopka@biometix.com
 truth_file: ultp_data/UL-TP_truth.csv
 results_file: ultp_data/UL-TP_res.csv
 analysis_file: ultp_data/UL-TP_analysis.json
+show_types: "*"
+test_type: SA Bat
