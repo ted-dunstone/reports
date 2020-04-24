@@ -1,6 +1,5 @@
 from textwrap import dedent
-from PxS_display import plot_match_dist_mpl, plot_acc_res, plot_CMC_mpl
-#from pxlib.util.display import plot_score_box
+from PxS_display import plot_match_dist_mpl, plot_acc_res, plot_CMC_mpl, plot_score_box
 from px_build_doc.util import FigureManager, TableManager, fetch_var, display
 import data
 
@@ -85,17 +84,17 @@ def print_cmc_curve(data, table, ft, errors):
         errors.append(f"For {ft} type, unable to output CMC plot due to exception: {ex}")
 
 
-# def print_score_box(df, threshold, ft, errors):
-#     try:
-#         df_renamed = df.rename(columns={c_rank:'rank', c_truth:'truth', c_score:'scores'})
-#         plot = plot_score_box(df_renamed,threshold=threshold)
-#         bp_img_fn = "boxplot.png"
-#         plt.tight_layout()
-#         plt.savefig(bp_img_fn)
-#         plt.close()
-#         display(figs.fig_latex(bp_img_fn,"Rank vs Score"))
-#     except Exception as ex:
-#         errors.append(f"For {ft} type, unable to output score boxplot (may be incomplete rank information) due to exception: {ex}")
+def print_score_box(df, threshold, ft, errors):
+    try:
+        df_renamed = df.rename(columns={c_rank:'rank', c_truth:'truth', c_score:'scores'})
+        plot = plot_score_box(df_renamed,threshold=threshold)
+        bp_img_fn = "boxplot.png"
+        plt.tight_layout()
+        #plt.savefig(bp_img_fn)
+        #plt.close()
+        figs.save_plot("Rank vs Score",height=9).display()
+    except Exception as ex:
+        errors.append(f"For {ft} type, unable to output score boxplot (may be incomplete rank information) due to exception: {ex}")
 
 
 
@@ -159,8 +158,8 @@ for ft in finger_types:
         """))
         print_cmc_curve(dres.data, dres.cmc_table, ft, errors)
     
-        # display("### Rank versus Score Box Plot")
-        # display(dedent("""
-        #     The Rank versus Score Box Plot shows a box plot of the match (truth=1) and non-match (truth=0) score ranges versus rank. The dotted line represents the set threshold.
-        # """))
-        # print_score_box(dres.data, dres.threshold, ft, errors)
+        display("### Rank versus Score Box Plot")
+        display(dedent("""
+            The Rank versus Score Box Plot shows a box plot of the match (truth=1) and non-match (truth=0) score ranges versus rank. The dotted line represents the set threshold.
+        """))
+        print_score_box(dres.data, dres.threshold, ft, errors)
