@@ -23,8 +23,8 @@ A summary of the imported matching data overall score ranges for match and non m
 
 | Attribute     | Score  1| Score  2|
 | ------------- | -----:| -----:|
-| Maximum non-match score  | {{max_neg_score}} | |
-| Minimum match score      | | {{min_pos_score}} |
+| Maximum non-match score  | | {{max_neg_score}} | 
+| Minimum match score      | {{min_pos_score}} | |
 | Match score   (5%,95%) quantile  | {{pos_score_05}} |  {{pos_score_95}}|
 | Non-match Match score  (5%,95%) quantile   |  {{neg_score_05}} | {{neg_score_95}}|
 

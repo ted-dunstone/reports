@@ -28,16 +28,16 @@ def print_outliers(outliers, ft):
             """))
 
         if outliers[0].shape[0] > 0:
-            tables.read_df(outliers[0][selec]).display("Match Outliers, combined results (ALL)")
+            tables.read_df(outliers[0][selec]).display("Match Outliers, combined results (ALL)",showindex=True)
 
         if outliers[1].shape[0] > 0:
-            tables.read_df(outliers[1][selec]).display("Non-Match Outliers, combined results (ALL)")
+            tables.read_df(outliers[1][selec]).display("Non-Match Outliers, combined results (ALL)",showindex=True)
 
         if outliers[2].shape[0] > 0:
-            tables.read_df(outliers[2][selec]).display("Match Outliers, combined results (Rank 1)")
+            tables.read_df(outliers[2][selec]).display("Match Outliers, combined results (Rank 1)",showindex=True)
 
         if outliers[3].shape[0] > 0:
-            tables.read_df(outliers[3][selec]).display("Non-Match Outliers, combined results (Rank 1)")
+            tables.read_df(outliers[3][selec]).display("Non-Match Outliers, combined results (Rank 1)",showindex=True)
 
 # Outliers
 display("# Appendices")

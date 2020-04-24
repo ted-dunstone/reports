@@ -209,6 +209,24 @@ class Analysis():
         self.alarm_table = pd.DataFrame()
         self.cmc_table = pd.DataFrame()
 
+    def  build_zoo(self, data, id_col, rank_col, score_col, truth_col):
+        mean = data.pivot_table(index=id_col, columns=truth_col, values=score_col,
+                                aggfunc=[min, max, np.mean, "count"])  # .reset_index()
+        meanv = mean["mean"].rename({True: "match_score", False: "false_match_score", id_col: "Probe_ID"},
+                                    axis="columns")
+        mmaxv = mean["max"].rename({True: "match_score_Max", False: "false_match_score_max"}, axis="columns")
+        mminv = mean["min"].rename({True: "match_score_Min", False: "false_match_score_min"}, axis="columns")
+        countv = mean["count"].rename({True: "match_count", False: "false_match_count"}, axis="columns")
+        # print(mean.index)
+        # TODO probe_pid was both column and index and pandas was throwing errors. Changed it to instead reference
+        #  by index here and at line 46. Unsure if this changed how the data plots.
+        # meanv["probe_pid"] = mean.index
+        meanv.index = mean.index
+        mean = pd.concat([meanv, mmaxv, mminv, countv], axis=1)
+        mean["id"] = mean.index
+        return mean
+
+
     def analyse(self, data, id_col='probeid', rank_col='rank', score_col='scores', truth_col='truth', threshold=None, gallery_size=None, fpr_arry=[0.1, 0.05, 0.01, 0.001, 0.00001], is_identification=True):
         """
         Perform the main analysis
@@ -222,6 +240,8 @@ class Analysis():
 
         self.match_scores = data[data[truth_col] == True][score_col]
         self.non_match_scores = data[data[truth_col] == False][score_col]
+
+        self.zoo_result = self.build_zoo(data, id_col, rank_col, score_col, truth_col)
 
         # calculate accuracy results
         unique_probes = len(data[id_col].unique())

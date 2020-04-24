@@ -1,5 +1,8 @@
 from px_build_doc.util import WikipediaManager,fetch_query
 from px_build_doc.image_util import build_cover, get_font, read_image
+import data
+
+_, results, _ = data.get()
 
 # an example that can be used with build cover
 def test_draw(img,d,text=["title","subtitle"],

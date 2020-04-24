@@ -1,8 +1,11 @@
 from textwrap import dedent
-from PxS_display import plot_match_dist_mpl, plot_acc_res, plot_CMC_mpl
+from PxS_display import plot_match_dist_mpl, plot_acc_res, plot_CMC_mpl, plot_Zoo_mpl
 #from pxlib.util.display import plot_score_box
 from px_build_doc.util import FigureManager, TableManager, fetch_var, display
 import data
+
+from px_build_doc.util import set_temp_dir
+set_temp_dir()
 
 import matplotlib.pyplot as plt
 plt.rcParams['font.family'] = 'serif'
@@ -44,7 +47,7 @@ def print_performance(roc_results, ft, errors):
     except Exception as ex:
         errors.append(f"For {ft} type, unable to print performance analysis due to exception: {ex}")
 
-def print_match_dist(matches, non_matches, threshold, ft, errors):
+def print_match_dist(matches, non_matches, threshold, label, errors):
     
     try:
         display(dedent("""      
@@ -57,9 +60,9 @@ def print_match_dist(matches, non_matches, threshold, ft, errors):
 
         plot_match_dist_mpl(matches, non_matches, threshold=threshold)
         plt.show()
-        figs.save_plot( "Match Distribution",height=9).display()
+        figs.save_plot( "Match Distribution "+ f"({label})",height=9).display()
     except Exception as ex:
-        errors.append(f"Unable to output Distribution Plot due to exception: {ex}")
+        errors.append(f"Unable to output Distribution Plot due to exception {label} : {ex}")
 
 def print_acc_plot(roc_results, roc_res_adjust=None, label='', is_verification=True, rankone=False, errors=[]):
     try:
@@ -70,29 +73,77 @@ def print_acc_plot(roc_results, roc_res_adjust=None, label='', is_verification=T
         if rankone:
             title = "Alarm Curve"
         plt.show()
-        figs.save_plot(title,height=7).display()
+        figs.save_plot(title + f" ({label})",height=7).display()
     except Exception as ex:
         errors.append(f"For {label} type, unable to output ROC plot due to exception: {ex}")
 
-def print_cmc_curve(data, table, ft, errors):
+def print_cmc_curve(data, table, label, errors):
     try:
-        fig = plot_CMC_mpl(data[[c_rank, c_score, c_truth]], table[c_rank], table['identification rate'], c_rank, c_score, c_truth)
+        plot_CMC_mpl(data[[c_rank, c_score, c_truth]], table[c_rank], table['identification rate'], c_rank, c_score, c_truth)
         plt.show()
-        figs.save_plot("Cumulative Matching Curve",height=9).display()
+        figs.save_plot("Cumulative Matching Curve"+ f"({label})",height=9).display()
 
         #tables.read_df(table).display("Identification Results by Rank")
     except Exception as ex:
-        errors.append(f"For {ft} type, unable to output CMC plot due to exception: {ex}")
+        errors.append(f"For {label} type, unable to output CMC plot due to exception: {ex}")
+
+def proportion_to_description(value,total,label,less_than=[
+        (1.0,"As some outliers are expected this is not concerning, however it may be worth investigating."),
+        (2.0,"This is worth examining more closely to see if these represent users with similar attributes.")
+    ]):
+    proportion = 100.0*(value/total)
+    analysis = f"The proportion of {label} in the results is less than {'%2.2f'%proportion} %."
+    for t in less_than:
+        if (proportion<t[0]):
+            analysis += t[1]
+            break;
+    return analysis
 
 
-# def print_score_box(df, threshold, ft, errors):
+def print_zoo_plot(zoo_results, label='',theshold=2000):
+    outliers = plot_Zoo_mpl(zoo_results,100)
+    display("""
+The zoo plot displays how different users perform based on their average match score and their average non-match score. 
+Each point represents a single user and a good system will have few outliers. 
+It can be used to investigate which users or user groups are causing more system errors when additional metadata is available.
+In the tables below scores are shown in bold when they are above the threshold if a non-match and below the threshold for a match.
+    """)
+    figs.save_plot("Zoo Plot"+ f"({label})",height=9).display()
+    out = outliers[["id","zoo_class","false_match_score","match_score","false_match_score_max"]]
+    classes = {
+        "dove": "Users classified as doves are the best possible users to have as they verify easily and are more difficult to impost",
+        "chameleon": "Users classified as chameleons may have very generic features weighted heavily by the algorithm",
+        "worm": "Users classified as worms are the worst possible users to have as they have difficulty verifying and are easily imposted",
+        "phantom": "Users clas  sified as phantoms may have very unique features and match poorly in all cases"
+    }
+    for zoo_class in classes.keys():
+        filtered = out[out["zoo_class"]==zoo_class]
+        def fm_score(s, greater=True):
+            if greater:
+                return "**%r**"%s if s>=theshold else str(s)
+            else:
+                return "**%r**"%s if s<=theshold else str(s)
+
+        def highlight(col_name,greater):
+            return [fm_score(s,greater) for s in filtered[col_name]]
+            
+        if len(filtered)>0:
+            #filtered["match_score"]=highlight("match_score",False)
+            #filtered["false_match_score"]=highlight("false_match_score",True)
+            #filtered["false_match_score_max"]=highlight("false_match_score_max",True)
+            title = zoo_class+'s'
+            display(f"""
+* **{title.title()}**
+
+{classes[zoo_class]}. {proportion_to_description(len(filtered),len(zoo_results),title)}.
+
+""")
+            tables.read_df(filtered).display(f"Zoo analysis {title} ({label})")
+
+#def print_score_box(df, threshold, ft, errors):
 #     try:
 #         df_renamed = df.rename(columns={c_rank:'rank', c_truth:'truth', c_score:'scores'})
 #         plot = plot_score_box(df_renamed,threshold=threshold)
-#         bp_img_fn = "boxplot.png"
-#         plt.tight_layout()
-#         plt.savefig(bp_img_fn)
-#         plt.close()
 #         display(figs.fig_latex(bp_img_fn,"Rank vs Score"))
 #     except Exception as ex:
 #         errors.append(f"For {ft} type, unable to output score boxplot (may be incomplete rank information) due to exception: {ex}")
@@ -107,6 +158,8 @@ errors = []
 #Main Analysis.
 for ft in finger_types:
     dres = results[ft]
+
+    plot_label = f'{dres.label} {dres.dtype}'
     
     display(f"# {fetch_var('label')} type {ft}")
     
@@ -135,29 +188,35 @@ for ft in finger_types:
             display(dedent("""
                 The graphs below show an accuracy adjusted curve using the gallery size provided.
             """))
-        print_acc_plot(dres.accuracy_results, dres.ac_res_gallery_adjusted, label=f'{dres.label} {dres.dtype}', rankone=False, is_verification=is_verification)
+        print_acc_plot(dres.accuracy_results, dres.ac_res_gallery_adjusted, label=plot_label, rankone=False, is_verification=is_verification)
         display(dedent("""
             The following table shows false non-match rates and gallery adjusted values (if calculated) as evaluated at specific false match rates using the ROC curve.
         """))
-        tables.read_df(dres.accuracy_table).display(f"False Match vs False Non-Match ({ft})")
+        tables.read_df(dres.accuracy_table).display(f"False Match vs False Non-Match ({plot_label})")
         
         #Alarm curve
         if is_identification:
             display(dedent("""
                 The Alarm Curve shows accuracy rate for the rank 1 results. This corresponds to how often the system would falsely alarm with the highest matching result for different thresholds.
             """))
-            print_acc_plot(dres.alarm_results, dres.alarm_gallery_adjusted, label=f'{dres.label} {dres.dtype}', rankone=True, is_verification=is_verification)
+            print_acc_plot(dres.alarm_results, dres.alarm_gallery_adjusted, label=plot_label, rankone=True, is_verification=is_verification)
             display(dedent("""
                 The following table shows false non-match rates and gallery adjusted values (if calculated) as evaluated at specific false match rates using the Alarm curve.
             """))
-            tables.read_df(dres.alarm_table).display(f"False Match vs False Non-Match ({ft})")
+            tables.read_df(dres.alarm_table).display(f"False Match vs False Non-Match ({plot_label})")
 
     if is_identification:
         display("### Cumulative Match Curve")
         display(dedent("""
             The Cumulative Match Curve shows the identification as a function of the rank (or candidate list size). The plot below displays the match and non-match scores versus the rank (shaded area shows the distribution range).
         """))
-        print_cmc_curve(dres.data, dres.cmc_table, ft, errors)
+        print_cmc_curve(dres.data, dres.cmc_table, label=plot_label, errors=errors)
+
+        display('### Zoo Analysis')
+
+        print_zoo_plot(dres.zoo_result, plot_label)
+        
+        #tables.read_df(dres.zoo_result).display(f"Zoo Analysis ({plot_label})")
     
         # display("### Rank versus Score Box Plot")
         # display(dedent("""

@@ -1,4 +1,10 @@
 import matplotlib.pyplot as plt
+import numpy as np
+
+from sklearn.cluster import DBSCAN, OPTICS
+from collections import Counter
+import pandas as pd
+
 import seaborn as sns
 import pytablewriter
 from IPython.display import display, Markdown
@@ -30,6 +36,54 @@ class Figures():
         display(Markdown("**Figure %d**: *%s*\n\n"%(self.figure_count, name)))
 
 
+
+def plot_Zoo_mpl(zoo_results,eps):
+    zoo_results=zoo_results.dropna()
+    plt.figure(figsize=(12,7))
+    y_name="match_score"
+    x_name="false_match_score"
+    x=zoo_results[x_name]
+    y=zoo_results[y_name]
+    data=[r for r in zip(x.values,y.values)]
+    model = DBSCAN(eps=eps,min_samples=10).fit(data)
+    colors = model.labels_
+    xmean=x.mean()
+    ymean=y.mean()
+
+    def mapv(c,xy):
+      if c==-1:
+        x1,y1=xy[0],xy[1]
+        if x1<=xmean and y1<=ymean:
+          return "worm",10
+        elif x1>=xmean and y1<=ymean:
+          return "dove",10
+        elif x1>=xmean and y1>=ymean:
+          return "chameleon",10
+        elif x1<=xmean and y1>=ymean:
+          return "phantom",10
+        print(x1,y1,c)
+      else:
+        return "sheep",5
+    
+    zoo_map=[mapv(c,data[i]) for (i,c) in enumerate(colors)]
+    
+    data=zoo_results.copy()
+    data['zoo_class']=[v[0] for v in zoo_map]
+    
+    data['zoo_size']=[v[1] for v in zoo_map]
+    
+    ax = sns.scatterplot(x=x_name, y=y_name,hue='zoo_class', style='zoo_class', size='zoo_size',
+                     data= data, legend='brief')
+    plt.axhline(y.mean(),linestyle=':')
+    plt.axvline(x.mean(),linestyle=':')
+    
+    # fix legend
+    h,l = ax.get_legend_handles_labels()
+    col_lgd = plt.legend(h[:6], l[:6], loc='upper left', 
+                     bbox_to_anchor=(0.05, -.09), fancybox=True, shadow=True, ncol=6)
+    plt.gca().add_artist(col_lgd)
+
+    return data[data['zoo_class']!='sheep']
 
 # Matplotlib plotting functions.
 def plot_match_dist_mpl(match_scores, non_match_scores, threshold=None, match_color='green', non_match_color='red', kde_on=True, labels_on=True):
