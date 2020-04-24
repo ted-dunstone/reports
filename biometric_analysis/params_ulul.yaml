@@ -1,0 +1,14 @@
+# Main Parameters
+title: Biometric Analysis
+subtitle: Analysis of data for AFIS fingerprint matcher
+author: Biometix
+date: 15th April 2020
+keywords: "[biometrics]"
+# Personal Params
+contact: Edward Kopka
+contact_phone: 0490057270
+contact_email: e.kopka@biometix.com
+# Report Specific Params
+truth_file: ulul_data/UL-UL_truth.csv
+results_file: ulul_data/UL-UL_res.csv
+analysis_file: ulul_data/UL-UL_analysis.json

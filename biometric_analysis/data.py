@@ -220,9 +220,9 @@ def read_data(truth_data_path, job_data_path,
         'fltr':c_fltr
     }
     if valid_df and len(errors) == 0:
-        return merged_df, col, []
+        return merged_df, col, is_identification, []
     else:
-        return None , None , errors
+        return None , None , None, errors
 
 
 def get_finger_types(data_df, col, show_types):
@@ -270,7 +270,7 @@ def calc_summary(data_df, col, is_identification):
 def get_data(truth_data_path, job_data_path, params):
     # params = Params(analysis_path)
 
-    data_df, col, errors = read_data(truth_data_path, job_data_path, {
+    data_df, col, is_identification, errors = read_data(truth_data_path, job_data_path, {
             'pid':params.truth_probe_col,
             'gid':params.truth_gallery_col,
             'truth':params.truth_match_col
@@ -285,7 +285,6 @@ def get_data(truth_data_path, job_data_path, params):
         print('Could not read and process data')
         return
 
-    is_identification = True
     finger_types = get_finger_types(data_df, col, params.show_types)
 
     results = calc_results_main(data_df, col, params.threshold, params.gallery_size, params.fpr_arry,is_identification,finger_types)
@@ -297,7 +296,7 @@ def get_data(truth_data_path, job_data_path, params):
     return data_df, col, results, outliers, metrics
 
 def get(reload_data=False):
-    doc_params = read_variables_yaml("params.yaml")
+    doc_params = fetch_vars()
     base_path = os.path.splitext(doc_params['results_file'])[0]
     data_pkl = base_path+'_data_df.pkl'
     results_pkl = base_path+'_results.pkl'

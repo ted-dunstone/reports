@@ -1,0 +1,14 @@
+{
+	"threshold" : 2000,
+	"fpr_arry" : [0.1,0.05,0.01,0.001],
+	"max_fpr_diff" : 2.5,
+	"max_fnr_diff" : 2.5,
+	"max_auc_diff" : 0.2,
+	"data_type" : "TP to TP Verification",
+	"test_type" : "BAT Ping",
+	"results_probe_col" : "ProbeMRR",
+	"results_gallery_col" : "GalleryMRR",
+	"truth_probe_col" : "probeid",
+	"truth_gallery_col" : "galleryid",
+	"truth_match_col" : "truth"
+}
