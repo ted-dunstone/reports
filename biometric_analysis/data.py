@@ -24,24 +24,50 @@ def read_json_file(fn):
         return {}
 
 class Params():
-    def __init__(self, fn):
+    def __init__(self, ps_dict=None, fn=None):
+        # Set default values
+        self.threshold = None #Used as threshold for analysis.
+        self.fpr_arry = [0.1, 0.05, 0.01, 0.001] #False Positive Rate/Ratio.
+        self.data_type = 'data type'
+        self.test_type = 'test type' #Used in Introduction.
+        self.label = 'Fingerprint'
+        self.results_probe_col = '' #Used in reading data.
+        self.results_gallery_col = '' #Used in reading data.
+        self.results_scores_col = '' #Used in reading data.
+        self.results_filter_col = '' #Used in reading data.
+        self.results_rank_col = '' #Used in reading data.
+        self.truth_probe_col = '' #Used in reading data.
+        self.truth_gallery_col = '' #Used in reading data.
+        self.truth_match_col = 'truth' #Used in reading data.
+        self.show_types = '*' #indicate what finger positions to show.
+        self.gallery_size = None
+        self.null_string = 'NULL'
+        if fn is not None:
+            self.read_json(fn)
+        if ps_dict is not None:
+            self.read_dictionary(ps_dict)
+
+    def read_json(self, fn):
         ps = read_json_file(fn)
-        self.threshold = ps.get('threshold') if 'threshold' in ps.keys() else None #Used as threshold for analysis.
-        self.fpr_arry = ps.get('fpr_arry') if 'fpr_arry' in ps.keys() else [0.1, 0.05, 0.01, 0.001] #False Positive Rate/Ratio.
-        self.data_type = ps.get('data_type') if 'data_type' in ps.keys() else 'data type'
-        self.test_type = ps.get('test_type') if 'test_type' in ps.keys() else 'test type' #Used in Introduction.
-        self.label = ps.get('label') or 'Fingerprint'
-        self.results_probe_col = ps.get('results_probe_col').replace('_','').lower() if 'results_probe_col' in ps.keys() else '' #Used in reading data.
-        self.results_gallery_col = ps.get('results_gallery_col').replace('_','').lower() if 'results_gallery_col' in ps.keys() else '' #Used in reading data.
-        self.results_scores_col = ps.get('results_scores_col').replace('_','').lower() if 'results_scores_col' in ps.keys() else '' #Used in reading data.
-        self.results_filter_col = ps.get('results_filter_col').replace('_','').lower() if 'results_filter_col' in ps.keys() else '' #Used in reading data.
-        self.results_rank_col = ps.get('results_rank_col').replace('_','').lower() if 'results_rank_col' in ps.keys() else '' #Used in reading data.
-        self.truth_probe_col = ps.get('truth_probe_col').replace('_','').lower() if 'truth_probe_col' in ps.keys() else '' #Used in reading data.
-        self.truth_gallery_col = ps.get('truth_gallery_col').replace('_','').lower() if 'truth_gallery_col' in ps.keys() else '' #Used in reading data.
-        self.truth_match_col = ps.get('truth_match_col').replace('_','').lower() if 'truth_match_col' in ps.keys() else 'truth' #Used in reading data.
-        self.show_types = ps.get('show_types').strip() if 'show_types' in ps.keys() else '*' #indicate what finger positions to show.
-        self.gallery_size = ps.get('gallery_size') if 'gallery_size' in ps.keys() else None
-        self.null_string = ps.get('null_string') if 'null_string' in ps.keys() else 'NULL'
+        self.read_dictionary(ps)
+
+    #ps is a dictionary
+    def read_dictionary(self, ps):
+        self.__dict__.update(ps) #TODO update only existing keys.
+        self.lower_col_names()
+        self.show_types.strip()
+    
+    def lower_col_names(self):
+        lowercase_attributes = ['results_filter_col',
+                                'results_gallery_col',
+                                'results_probe_col',
+                                'results_rank_col',
+                                'results_scores_col',
+                                'truth_gallery_col',
+                                'truth_match_col',
+                                'truth_probe_col']
+        for atr in lowercase_attributes:
+            self.__dict__[atr] = self.__dict__[atr].replace('_','').lower()
 
 def find_column_name(search_arr, columns):
     use_col = None
@@ -125,9 +151,9 @@ def read_data(truth_data_path, job_data_path,
     
     #check if id columns have data in them
     if score_data[c_rpid].isnull().all(): #Check if all values are null
-        raise Exception(f"probeid column in job data is all null. User specified column was {results_probe_col}.")
+        raise Exception(f"probeid column in job data is all null. User specified column was {c_rpid}.")
     if score_data[c_rgid].isnull().all(): 
-        raise Exception(f"galleryid column in job data is all null. User specified column was {results_gallery_col}.")
+        raise Exception(f"galleryid column in job data is all null. User specified column was {c_rgid}.")
     
     #Filter out records that do not have a score value.
     missing_score_df = pxc.missing_score(score_data, c_score)
@@ -194,9 +220,9 @@ def read_data(truth_data_path, job_data_path,
         'fltr':c_fltr
     }
     if valid_df and len(errors) == 0:
-        return merged_df, col, []
+        return merged_df, col, is_identification, []
     else:
-        return None , None , errors
+        return None , None , None, errors
 
 
 def get_finger_types(data_df, col, show_types):
@@ -244,7 +270,7 @@ def calc_summary(data_df, col, is_identification):
 def get_data(truth_data_path, job_data_path, params):
     # params = Params(analysis_path)
 
-    data_df, col, errors = read_data(truth_data_path, job_data_path, {
+    data_df, col, is_identification, errors = read_data(truth_data_path, job_data_path, {
             'pid':params.truth_probe_col,
             'gid':params.truth_gallery_col,
             'truth':params.truth_match_col
@@ -259,7 +285,6 @@ def get_data(truth_data_path, job_data_path, params):
         print('Could not read and process data')
         return
 
-    is_identification = True
     finger_types = get_finger_types(data_df, col, params.show_types)
 
     results = calc_results_main(data_df, col, params.threshold, params.gallery_size, params.fpr_arry,is_identification,finger_types)
@@ -271,7 +296,7 @@ def get_data(truth_data_path, job_data_path, params):
     return data_df, col, results, outliers, metrics
 
 def get(reload_data=False):
-    doc_params = read_variables_yaml("params.yaml")
+    doc_params = fetch_vars()
     base_path = os.path.splitext(doc_params['results_file'])[0]
     data_pkl = base_path+'_data_df.pkl'
     results_pkl = base_path+'_results.pkl'
@@ -283,7 +308,8 @@ def get(reload_data=False):
         data_loaded = False
 
     if not data_loaded or reload_data:
-        params = Params(doc_params['analysis_file'])
+        pfn = doc_params['analysis_file'] if 'analysis_file' in doc_params.keys() else None
+        params = Params(fn=pfn, ps_dict=doc_params)
         data_df, col, results, outliers, metrics = get_data(doc_params['truth_file'], doc_params['results_file'], params)
         data_df.to_pickle(data_pkl)
         pickle.dump(results, open(results_pkl, "wb"))

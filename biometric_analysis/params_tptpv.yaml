@@ -9,6 +9,6 @@ contact: Edward Kopka
 contact_phone: 0490057270
 contact_email: e.kopka@biometix.com
 # Report Specific Params
-truth_file: ultp_data/UL-TP_truth.csv
-results_file: ultp_data/UL-TP_res.csv
-analysis_file: ultp_data/UL-TP_analysis.json
+truth_file: tptpv_data/TP-TPverify_truth.csv
+results_file: tptpv_data/TP-TPverify_res.csv
+analysis_file: tptpv_data/TP-TPverify_analysis.json

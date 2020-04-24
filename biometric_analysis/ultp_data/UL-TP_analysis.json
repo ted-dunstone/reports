@@ -11,6 +11,5 @@
   "results_probe_col": "ProbeMRR",
   "results_gallery_col": "GalleryMRR",
   "show_types": "*",
-  "gallery_size": 5000,
-  "identical_print_check": 0.1
+  "gallery_size": 5000
 }
