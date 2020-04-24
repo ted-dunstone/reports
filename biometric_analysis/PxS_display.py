@@ -197,3 +197,22 @@ def plot_CMC_mpl(data, xvals, cdf, rank_col='rank', score_col='score', truth_col
     fig = plt.gcf()
     #plt.close()
     return fig
+
+def plot_score_box(data,threshold=None,max_rank=20):
+    """
+    Plot a Score vs Rank box plot (with optional threshold)
+    """
+    sns.set(style="ticks", palette="pastel")
+
+    sns.boxplot(x="rank", y="scores",
+            hue="truth", palette=["m", "g"], #split=True,inner="box",
+            data=data[data['rank']<max_rank])
+    if threshold:
+        plt.axhline(threshold,ls='--',c='grey',alpha=0.8)
+
+    sns.despine(offset=10, trim=True)
+
+    plt.title('Rank vs Score')
+    plt.xlabel('rank')
+    plt.ylabel('score')
+    return plt.gca() #return the axis
