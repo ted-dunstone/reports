@@ -8,9 +8,11 @@ def get_df(loc):
     df  = pd.read_csv(loc, encoding="ISO-8859-1",dtype='object')
     df.columns = df.columns.str.strip()
     df_cols = df.columns
-    for i, v in enumerate(df.dtypes):
-        if v == object:
-            df[df_cols[i]] = df[df_cols[i]].apply(lambda x: x.strip() if isinstance(x, str) else x)
+
+    # ensure all strings have no trailing space
+    #for i, v in enumerate(df.dtypes):
+    #    if v == object:
+    #        df[df_cols[i]] = df[df_cols[i]].apply(lambda x: x.strip() if isinstance(x, str) else x)
     return df
 
 

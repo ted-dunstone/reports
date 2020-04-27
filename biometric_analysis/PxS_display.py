@@ -54,13 +54,13 @@ def plot_Zoo_mpl(zoo_results,eps):
       if c==-1:
         x1,y1=xy[0],xy[1]
         if x1<=xmean and y1<=ymean:
-          return "worm",10
+          return "phantom",10
         elif x1>=xmean and y1<=ymean:
           return "dove",10
         elif x1>=xmean and y1>=ymean:
           return "chameleon",10
         elif x1<=xmean and y1>=ymean:
-          return "phantom",10
+          return "worm",10
         print(x1,y1,c)
       else:
         return "sheep",5
@@ -251,3 +251,22 @@ def plot_CMC_mpl(data, xvals, cdf, rank_col='rank', score_col='score', truth_col
     fig = plt.gcf()
     #plt.close()
     return fig
+
+def plot_score_box(data,threshold=None,max_rank=20):
+    """
+    Plot a Score vs Rank box plot (with optional threshold)
+    """
+    sns.set(style="ticks", palette="pastel")
+
+    sns.boxplot(x="rank", y="scores",
+            hue="truth", palette=["m", "g"], #split=True,inner="box",
+            data=data[data['rank']<max_rank])
+    if threshold:
+        plt.axhline(threshold,ls='--',c='grey',alpha=0.8)
+
+    sns.despine(offset=10, trim=True)
+
+    plt.title('Rank vs Score')
+    plt.xlabel('rank')
+    plt.ylabel('score')
+    return plt.gca() #return the axis

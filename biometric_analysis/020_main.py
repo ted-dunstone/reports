@@ -1,6 +1,5 @@
 from textwrap import dedent
-from PxS_display import plot_match_dist_mpl, plot_acc_res, plot_CMC_mpl, plot_Zoo_mpl
-#from pxlib.util.display import plot_score_box
+from PxS_display import plot_match_dist_mpl, plot_acc_res, plot_CMC_mpl, plot_Zoo_mpl,  plot_score_box
 from px_build_doc.util import FigureManager, TableManager, fetch_var, display
 import data
 
@@ -25,13 +24,13 @@ figs = FigureManager()
 tables = TableManager()
 
 #Display functions
-def print_test_info(test_size):
-    display(dedent("""
-        Test Size: *%d* probes
-    """%(test_size)))
+def print_test_info(test_size,label,instance):
+    display(f"""
+        This section desacribes the performance parameters for {label} {instance}. There are {test_size} probes in this test set.
+    """)
 
 def print_performance(roc_results, ft, errors):
-    try:
+    #try:
         threshold = roc_results.threshold
         if threshold is not None:
             fpr_t = roc_results.fpr_thresh
@@ -44,28 +43,28 @@ def print_performance(roc_results, ft, errors):
                 * False Negative Rate: *%2.2f* %%
                 * True Positive Rate: *%2.2f* %%
             """%(threshold,fpr_t*100,fnr_t*100,tpr_t*100)))
-    except Exception as ex:
-        errors.append(f"For {ft} type, unable to print performance analysis due to exception: {ex}")
+    #except Exception as ex:
+    #    errors.append(f"For {ft} type, unable to print performance analysis due to exception: {ex}")
 
 def print_match_dist(matches, non_matches, threshold, label, errors):
     
-    try:
-        display(dedent("""      
+    #try:
+        display("""      
             * Count of Matches: **%s**
             * Count of Non-Matches: **%s**
         """%(
             len(matches),
             len(non_matches)
-            )))
+            ))
 
         plot_match_dist_mpl(matches, non_matches, threshold=threshold)
         plt.show()
         figs.save_plot( "Match Distribution "+ f"({label})",height=9).display()
-    except Exception as ex:
-        errors.append(f"Unable to output Distribution Plot due to exception {label} : {ex}")
+    #except Exception as ex:
+    #    errors.append(f"Unable to output Distribution Plot due to exception {label} : {ex}")
 
 def print_acc_plot(roc_results, roc_res_adjust=None, label='', is_verification=True, rankone=False, errors=[]):
-    try:
+    #try:
         roc_res_adj_dict = roc_res_adjust.to_dict() if roc_res_adjust is not None else None
         plot_acc_res(roc_results.to_dict(), roc_res_adj_dict, label, is_verification, rankone)
         
@@ -74,47 +73,47 @@ def print_acc_plot(roc_results, roc_res_adjust=None, label='', is_verification=T
             title = "Alarm Curve"
         plt.show()
         figs.save_plot(title + f" ({label})",height=7).display()
-    except Exception as ex:
-        errors.append(f"For {label} type, unable to output ROC plot due to exception: {ex}")
+    #except Exception as ex:
+    #    errors.append(f"For {label} type, unable to output ROC plot due to exception: {ex}")
 
 def print_cmc_curve(data, table, label, errors):
-    try:
+    #try:
         plot_CMC_mpl(data[[c_rank, c_score, c_truth]], table[c_rank], table['identification rate'], c_rank, c_score, c_truth)
         plt.show()
         figs.save_plot("Cumulative Matching Curve"+ f"({label})",height=9).display()
 
         #tables.read_df(table).display("Identification Results by Rank")
-    except Exception as ex:
-        errors.append(f"For {label} type, unable to output CMC plot due to exception: {ex}")
+    #except Exception as ex:
+    #    errors.append(f"For {label} type, unable to output CMC plot due to exception: {ex}")
 
 def proportion_to_description(value,total,label,less_than=[
         (1.0,"As some outliers are expected this is not concerning, however it may be worth investigating."),
-        (2.0,"This is worth examining more closely to see if these represent users with similar attributes.")
+        (2.0,"This is worth examining more closely to see if these represent individuals with similar attributes.")
     ]):
     proportion = 100.0*(value/total)
     analysis = f"The proportion of {label} in the results is less than {'%2.2f'%proportion} %."
     for t in less_than:
         if (proportion<t[0]):
             analysis += t[1]
-            break;
+            break
     return analysis
 
 
 def print_zoo_plot(zoo_results, label='',theshold=2000):
     outliers = plot_Zoo_mpl(zoo_results,100)
     display("""
-The zoo plot displays how different users perform based on their average match score and their average non-match score. 
-Each point represents a single user and a good system will have few outliers. 
-It can be used to investigate which users or user groups are causing more system errors when additional metadata is available.
+The zoo plot displays how different people perform based on their average match score and their average non-match score. 
+Each point represents a single individual and a good system will have few outliers. 
+It can be used to investigate which people or groups of people are causing more system errors when additional metadata is available.
 In the tables below scores are shown in bold when they are above the threshold if a non-match and below the threshold for a match.
     """)
     figs.save_plot("Zoo Plot"+ f"({label})",height=9).display()
     out = outliers[["id","zoo_class","false_match_score","match_score","false_match_score_max"]]
     classes = {
-        "dove": "Users classified as doves are the best possible users to have as they verify easily and are more difficult to impost",
-        "chameleon": "Users classified as chameleons may have very generic features weighted heavily by the algorithm",
-        "worm": "Users classified as worms are the worst possible users to have as they have difficulty verifying and are easily imposted",
-        "phantom": "Users clas  sified as phantoms may have very unique features and match poorly in all cases"
+        "dove": "Individuals classified as doves work the best with this algorithm  as they verify easily and are more difficult to impost",
+        "chameleon": "Indviduals classified as chameleons may have very generic features weighted heavily by the algorithm",
+        "worm": "Indviduals classified as worms work the worst with the algorithm as they have difficulty verifying and are easily imposted",
+        "phantom": "Indviduals classified as phantoms may have very unique features and match poorly in all cases"
     }
     for zoo_class in classes.keys():
         filtered = out[out["zoo_class"]==zoo_class]
@@ -147,6 +146,20 @@ In the tables below scores are shown in bold when they are above the threshold i
 #         display(figs.fig_latex(bp_img_fn,"Rank vs Score"))
 #     except Exception as ex:
 #         errors.append(f"For {ft} type, unable to output score boxplot (may be incomplete rank information) due to exception: {ex}")
+#        errors.append(f"For {ft} type, unable to output CMC plot due to exception: {ex}")
+
+
+def print_score_box(df, threshold, ft, errors):
+    #try:
+        df_renamed = df.rename(columns={c_rank:'rank', c_truth:'truth', c_score:'scores'})
+        plot = plot_score_box(df_renamed,threshold=threshold)
+        bp_img_fn = "boxplot.png"
+        plt.tight_layout()
+        #plt.savefig(bp_img_fn)
+        #plt.close()
+        figs.save_plot("Rank vs Score",height=9).display()
+    #except Exception as ex:
+    #    errors.append(f"For {ft} type, unable to output score boxplot (may be incomplete rank information) due to exception: {ex}")
 
 
 
@@ -163,7 +176,7 @@ for ft in finger_types:
     
     display(f"# {fetch_var('label')} type {ft}")
     
-    print_test_info(dres.nr_probes)
+    print_test_info(dres.nr_probes, fetch_var('label'), ft)
     
     print_performance(dres.accuracy_results, ft, errors)
     
@@ -218,8 +231,8 @@ for ft in finger_types:
         
         #tables.read_df(dres.zoo_result).display(f"Zoo Analysis ({plot_label})")
     
-        # display("### Rank versus Score Box Plot")
-        # display(dedent("""
-        #     The Rank versus Score Box Plot shows a box plot of the match (truth=1) and non-match (truth=0) score ranges versus rank. The dotted line represents the set threshold.
-        # """))
-        # print_score_box(dres.data, dres.threshold, ft, errors)
+        display("### Rank versus Score Box Plot")
+        display(dedent("""
+            The Rank versus Score Box Plot shows a box plot of the match (truth=1) and non-match (truth=0) score ranges versus rank. The dotted line represents the set threshold.
+        """))
+        print_score_box(dres.data, dres.threshold, ft, errors)

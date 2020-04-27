@@ -233,6 +233,7 @@ class Analysis():
         data : a pandas Dataframe columns=['probeid','rank','scores','truth']
         externall calls : roc_calc()->Ac_results() calc_CMC()
         """
+
         if threshold is not None:
             self.threshold = threshold
         if gallery_size is not None:
@@ -287,7 +288,7 @@ class Analysis():
 
 
 # Outlier Functions
-def return_outliers_zscore(df, col, truth_col, sign, max_num, threshold=3):
+def return_outliers_zscore(df, col, truth_col, sign,  threshold=3):
     in_array = df[df[truth_col] == sign]
     zscore = stats.zscore(in_array[col])
     if sign:
@@ -295,37 +296,42 @@ def return_outliers_zscore(df, col, truth_col, sign, max_num, threshold=3):
     else:
         sel = in_array[(zscore >= threshold)]
 
-    return sel.sort_values(col, ascending=sign)[0:max_num]
+    return sel.sort_values(col, ascending=sign)
 
 
-def return_outliers_quantile(df, col, truth_col, sign, max_num, threshold=0.005):
+def return_outliers_quantile(df, col, truth_col, sign, threshold=0.005):
     in_array = df[df[truth_col] == sign]
     if not sign:
         threshold = 1-threshold
     qscore = in_array[col].quantile(threshold)
+    #in_array['qscore'] = qscore
     if sign:
-        sel = in_array[in_array[col] < qscore]
+        sel = in_array[in_array[col] < qscore].copy()
     else:
-        sel = in_array[in_array[col] >= qscore]
-
-    return sel.sort_values(col, ascending=sign)[0:max_num]
+        sel = in_array[in_array[col] >= qscore].copy()
+    
+    sel['qscore']=[stats.percentileofscore(in_array[col], score) for score in sel[col]]
+    
+    return sel.sort_values(col, ascending=sign)
 
 
 def calc_outliers(df, score_col='scores', truth_col='truth', rank_col='rank', ft='', errors=[]):
-    try:
-        outlier_table1 = return_outliers_quantile(
-            df, score_col, truth_col, True, 10)  # match outliers
-        outlier_table2 = return_outliers_quantile(
-            df, score_col, truth_col, False, 10)  # non-match outliers
-        rank_1_results = df[df[rank_col] == 1]
-        outlier_table3 = return_outliers_quantile(
-            rank_1_results, score_col, truth_col, True, 10)  # match outliers rank 1
-        outlier_table4 = return_outliers_quantile(
-            rank_1_results, score_col, truth_col, False, 10)  # non-match outliers rank 1
-    except Exception as ex:
-        errors.append(
-            f"For {ft} type, unable to calculate outliers due to exception: {ex}")
-    return [outlier_table1, outlier_table2, outlier_table3, outlier_table4]
+    #try:
+    outlier_table1 = return_outliers_quantile(
+        df, score_col, truth_col, True)  # match outliers
+    outlier_table2 = return_outliers_quantile(
+        df, score_col, truth_col, False)  # non-match outliers
+    rank_1_results = df[df[rank_col] == 1]
+    outlier_table3 = return_outliers_quantile(
+        rank_1_results, score_col, truth_col, True)  # match outliers rank 1
+    outlier_table4 = return_outliers_quantile(
+        rank_1_results, score_col, truth_col, False)  # non-match outliers rank 1
+    #except Exception as ex:
+    #    errors.append(
+    #        f"For {ft} type, unable to calculate outliers due to exception: {ex}")
+    return {
+        "match":outlier_table1, "non_match":outlier_table2, "match_rank_one":outlier_table3, "non_match_rank_one":outlier_table4}
+        
 
 # Functions to calculate edge cases
 def biometric_misses(score_data, truth_table, rpid_col='probeid', rgid_col='galleryid', tpid_col='probeid', tgid_col='galleryid', truth_col='truth'):

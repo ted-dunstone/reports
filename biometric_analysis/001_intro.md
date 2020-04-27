@@ -2,9 +2,7 @@
 
 This report provides an comprenhsive analysis of the {{data_type}} for *{{test_type}}*. This includes the estimation of accuracy and identification of outliers. The report was run on {{date}}.
 
-
-
-## Summary Counts
+Summary Counts
 
 A summary of the imported matching data used to generate this report is shown in table \ref{summary_counts}.
 
