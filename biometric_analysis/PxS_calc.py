@@ -101,22 +101,26 @@ def roc_calc(results, rank_col='rank', truth_col='truth', score_col='score', thr
     if rankone:
         results = results[results[rank_col] == 1]
 
-    roc_res = Ac_Results()
-    roc_res.calc_roc_df(results[truth_col], results[score_col])
-    if threshold is not None:
-        roc_res.calc_metrics(threshold)
-
-    # below results are adjusted for Gallery Size
+    roc_res = None
     roc_res_adjust = None
-    if gallery_size is not None:
-        roc_res_adjust = roc_res
-        num_match = results[truth_col].sum()
-        num_non_match = len(results)-num_match
-        with np.errstate(divide='ignore'):
-            roc_res_adjust.adjust_for_gallery(
-                num_probes, gallery_size, num_match, num_non_match)
-            if threshold is not None:
-                roc_res_adjust.calc_metrics(threshold)
+
+    if(results[truth_col].unique().size == 2):
+        roc_res = Ac_Results()
+        roc_res.calc_roc_df(results[truth_col], results[score_col])
+        if threshold is not None:
+            roc_res.calc_metrics(threshold)
+
+        # below results are adjusted for Gallery Size
+
+        if gallery_size is not None:
+            roc_res_adjust = roc_res
+            num_match = results[truth_col].sum()
+            num_non_match = len(results)-num_match
+            with np.errstate(divide='ignore'):
+                roc_res_adjust.adjust_for_gallery(
+                    num_probes, gallery_size, num_match, num_non_match)
+                if threshold is not None:
+                    roc_res_adjust.calc_metrics(threshold)
 
     return roc_res, roc_res_adjust
 
@@ -128,7 +132,6 @@ def calc_CMC(data, total_count, rank_col='rank', score_col='score', truth_col='t
     data : pandas dataframe
     total_count : total number of probes
     """
-
     rank_pivot = data.pivot_table(
         index=rank_col, columns=truth_col, values=score_col, aggfunc=[
             min, max, np.mean, "count"]
@@ -209,14 +212,17 @@ class Analysis():
         self.alarm_table = pd.DataFrame()
         self.cmc_table = pd.DataFrame()
 
-    def  build_zoo(self, data, id_col, rank_col, score_col, truth_col):
+    def build_zoo(self, data, id_col, rank_col, score_col, truth_col):
         mean = data.pivot_table(index=id_col, columns=truth_col, values=score_col,
                                 aggfunc=[min, max, np.mean, "count"])  # .reset_index()
         meanv = mean["mean"].rename({True: "match_score", False: "false_match_score", id_col: "Probe_ID"},
                                     axis="columns")
-        mmaxv = mean["max"].rename({True: "match_score_Max", False: "false_match_score_max"}, axis="columns")
-        mminv = mean["min"].rename({True: "match_score_Min", False: "false_match_score_min"}, axis="columns")
-        countv = mean["count"].rename({True: "match_count", False: "false_match_count"}, axis="columns")
+        mmaxv = mean["max"].rename(
+            {True: "match_score_Max", False: "false_match_score_max"}, axis="columns")
+        mminv = mean["min"].rename(
+            {True: "match_score_Min", False: "false_match_score_min"}, axis="columns")
+        countv = mean["count"].rename(
+            {True: "match_count", False: "false_match_count"}, axis="columns")
         # print(mean.index)
         # TODO probe_pid was both column and index and pandas was throwing errors. Changed it to instead reference
         #  by index here and at line 46. Unsure if this changed how the data plots.
@@ -226,14 +232,12 @@ class Analysis():
         mean["id"] = mean.index
         return mean
 
-
     def analyse(self, data, id_col='probeid', rank_col='rank', score_col='scores', truth_col='truth', threshold=None, gallery_size=None, fpr_arry=[0.1, 0.05, 0.01, 0.001, 0.00001], is_identification=True):
         """
         Perform the main analysis
         data : a pandas Dataframe columns=['probeid','rank','scores','truth']
         externall calls : roc_calc()->Ac_results() calc_CMC()
         """
-
         if threshold is not None:
             self.threshold = threshold
         if gallery_size is not None:
@@ -242,7 +246,8 @@ class Analysis():
         self.match_scores = data[data[truth_col] == True][score_col]
         self.non_match_scores = data[data[truth_col] == False][score_col]
 
-        self.zoo_result = self.build_zoo(data, id_col, rank_col, score_col, truth_col)
+        self.zoo_result = self.build_zoo(
+            data, id_col, rank_col, score_col, truth_col)
 
         # calculate accuracy results
         unique_probes = len(data[id_col].unique())
@@ -255,23 +260,24 @@ class Analysis():
 
         # calculate alarm results
         if is_identification:
-            a_res, a_res_adj = roc_calc(data[[truth_col, score_col, rank_col]], threshold=threshold,
-                                        num_probes=unique_probes, gallery_size=gallery_size, rankone=True)
-            self.alarm_results = a_res
-            self.alarm_gallery_adjusted = a_res_adj
+            alarm_res, alarm_res_adj = roc_calc(data[[truth_col, score_col, rank_col]], threshold=threshold,
+                                                num_probes=unique_probes, gallery_size=gallery_size, rankone=True)
+            self.alarm_results = alarm_res
+            self.alarm_gallery_adjusted = alarm_res_adj
 
         # create roc table
-        table = self.accuracy_results.roc_table(
-            col_name=f'FNMR {self.label} {self.dtype}', fpr_arry=fpr_arry)
-        if gallery_size is not None and self.ac_res_gallery_adjusted is not None:
-            table2 = self.ac_res_gallery_adjusted.roc_table(
-                col_name=f'FNMR {self.label} {self.dtype} gallery_adjusted', fpr_arry=fpr_arry)
-            table = table.join(table2)
-        table.insert(0, table.index.name, table.index)
-        self.accuracy_table = table
+        if self.accuracy_results is not None:
+            table = self.accuracy_results.roc_table(
+                col_name=f'FNMR {self.label} {self.dtype}', fpr_arry=fpr_arry)
+            if gallery_size is not None and self.ac_res_gallery_adjusted is not None:
+                table2 = self.ac_res_gallery_adjusted.roc_table(
+                    col_name=f'FNMR {self.label} {self.dtype} gallery_adjusted', fpr_arry=fpr_arry)
+                table = table.join(table2)
+            table.insert(0, table.index.name, table.index)
+            self.accuracy_table = table
 
         # create alarm table (TODO abstract alarm and roc table)
-        if is_identification:
+        if is_identification and (self.alarm_results is not None):
             atable = self.alarm_results.roc_table(
                 col_name=f'FNMR {self.label} {self.dtype}', fpr_arry=fpr_arry)
             if gallery_size is not None and self.ac_res_gallery_adjusted is not None:
@@ -281,8 +287,8 @@ class Analysis():
             atable.insert(0, atable.index.name, atable.index)
             self.alarm_table = atable
 
-            self.cmc_table = calc_CMC(data[[id_col, rank_col, truth_col, score_col]], unique_probes,
-                                      rank_col=rank_col, score_col=score_col, truth_col=truth_col, threshold=threshold)
+        self.cmc_table = calc_CMC(data[[id_col, rank_col, truth_col, score_col]], unique_probes,
+                                  rank_col=rank_col, score_col=score_col, truth_col=truth_col, threshold=threshold)
 
         self.data = data
 
@@ -309,14 +315,15 @@ def return_outliers_quantile(df, col, truth_col, sign, threshold=0.005):
         sel = in_array[in_array[col] < qscore].copy()
     else:
         sel = in_array[in_array[col] >= qscore].copy()
-    
-    sel['qscore']=[stats.percentileofscore(in_array[col], score) for score in sel[col]]
-    
+
+    sel['qscore'] = [stats.percentileofscore(
+        in_array[col], score) for score in sel[col]]
+
     return sel.sort_values(col, ascending=sign)
 
 
 def calc_outliers(df, score_col='scores', truth_col='truth', rank_col='rank', ft='', errors=[]):
-    #try:
+    # try:
     outlier_table1 = return_outliers_quantile(
         df, score_col, truth_col, True)  # match outliers
     outlier_table2 = return_outliers_quantile(
@@ -326,12 +333,12 @@ def calc_outliers(df, score_col='scores', truth_col='truth', rank_col='rank', ft
         rank_1_results, score_col, truth_col, True)  # match outliers rank 1
     outlier_table4 = return_outliers_quantile(
         rank_1_results, score_col, truth_col, False)  # non-match outliers rank 1
-    #except Exception as ex:
+    # except Exception as ex:
     #    errors.append(
     #        f"For {ft} type, unable to calculate outliers due to exception: {ex}")
     return {
-        "match":outlier_table1, "non_match":outlier_table2, "match_rank_one":outlier_table3, "non_match_rank_one":outlier_table4}
-        
+        "match": outlier_table1, "non_match": outlier_table2, "match_rank_one": outlier_table3, "non_match_rank_one": outlier_table4}
+
 
 # Functions to calculate edge cases
 def biometric_misses(score_data, truth_table, rpid_col='probeid', rgid_col='galleryid', tpid_col='probeid', tgid_col='galleryid', truth_col='truth'):
@@ -393,6 +400,8 @@ def match_mrr_check(df, flag, probeid_col='probeid', galleryid_col='galleryid', 
     return flaged_dfs
 
 # Functions to calculate summary data for the introduction
+
+
 def candidate_length(data, pid_col='probeid', rank_col='rank', is_identification=True):
     if is_identification:
         # code for finding minimum and maximum candidate length
