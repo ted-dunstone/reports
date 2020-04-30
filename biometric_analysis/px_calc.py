@@ -136,7 +136,7 @@ def roc_calc(results, rank_col='rank', truth_col='truth', score_col='score', thr
 # Calculate CMC table
 def calc_CMC(data, total_count, rank_col='rank', score_col='score', truth_col='truth', threshold=None):
     """
-    Plot an CMC
+    Calculates the CMC data points.
     data : pandas dataframe
     total_count : total number of probes
     """
