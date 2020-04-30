@@ -1,5 +1,5 @@
-from PxS_util import get_df
-import PxS_calc as pxc
+from px_util import get_df
+import px_calc as pxc
 import numpy as np
 import json
 import yaml

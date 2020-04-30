@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from textwrap import dedent
-from PxS_display import plot_match_dist_mpl, plot_acc_res, plot_CMC_mpl, plot_Zoo_mpl,  plot_score_box
+from px_display import plot_match_dist_mpl, plot_acc_res, plot_CMC_mpl, plot_Zoo_mpl,  plot_score_box
 from px_build_doc.util import FigureManager, TableManager, fetch_var, display
 import data
 
