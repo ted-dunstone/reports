@@ -1,5 +1,5 @@
-from PxS_util import get_df
-import PxS_calc as pxc
+from px_util import get_df
+import px_calc as pxc
 import numpy as np
 import json
 import yaml
@@ -27,7 +27,12 @@ def read_json_file(fn):
 
 
 class Params():
-    """ Define the parameters for the script """
+    """ Define the parameters for the script 
+    This object is designed to contain all the parameters associated with the
+    data being imported or for the analysis in the report.
+    It includes default values for all parameters and methods to read them
+    from a json file or a dictionary.
+    """
 
     def __init__(self, ps_dict=None, fn=None):
         # Set default values
@@ -76,6 +81,9 @@ class Params():
 
 
 def find_column_name(search_arr, columns):
+    """Find the column name in search_arr that can be used to access columns.
+    Usefull for supporting multiple default column names
+    """
     use_col = None
     for name in search_arr:
         if name in columns:
@@ -83,15 +91,14 @@ def find_column_name(search_arr, columns):
             break
     return use_col
 
-# Read in the data TODO wrap in try except block
-# truth_data_path : str
-# truth_col : dict
-# score_col : dict TODO add filter column
-# null_string : str
-
 
 def read_data_simple(score_data_path,
                      null_string="null"):
+    """Read in score data that already contains truth information.
+    TODO wrap in try except block
+    score_data_path : str
+    null_string : str
+    """
     valid_df = True
     is_identification = True
     errors = []
@@ -137,19 +144,22 @@ def read_data_simple(score_data_path,
     else:
         return None, None, None, errors
 
-# Read in the data TODO wrap in try except block
-# truth_data_path : str
-# truth_col : dict
-# score_col : dict TODO add filter column
-# null_string : str
 
 
-def read_data(truth_data_path, job_data_path,
+
+def read_data(truth_data_path, score_data_path,
               truth_col={'pid': 'probeid',
                          'gid': 'galleryid', 'truth': 'truth'},
               results_col={'pid': 'probeid', 'gid': 'galleryid',
                            'score': 'score', 'rank': 'rank'},
               null_string="null"):
+    """ Reads data in from a score file and truth file.
+    TODO wrap in try except block
+    truth_data_path : str
+    truth_col : dict
+    score_col : dict TODO add filter column
+    null_string : str
+    """
     valid_df = True
     is_identification = False
     errors = []
@@ -180,7 +190,7 @@ def read_data(truth_data_path, job_data_path,
     truth_table = truth_table.replace(null_string, np.nan)
 
     # Extract and clean up job data to not have leading or trailing spaces
-    score_data = get_df(job_data_path)
+    score_data = get_df(score_data_path)
     score_data.columns = [x.replace('_', '').lower()
                           for x in score_data.columns]
 
@@ -320,7 +330,9 @@ def get_finger_types(data_df, col, show_types):
 
 
 def calc_results_main(data_df, col, threshold=2000, gallery_size=10000, fpr_arry=[0.1, 0.05, 0.01, 0.001], is_identification=True, finger_types=[]):
-    # Main Analysis
+    """Complete all the calculations for the body of the report.
+    The results are collected in a dictionary where the key is the finger type.
+    """
     results = {}
     for ft in finger_types:
         analysis = pxc.Analysis(ft, "Finger")
@@ -333,7 +345,7 @@ def calc_results_main(data_df, col, threshold=2000, gallery_size=10000, fpr_arry
 
 
 def calc_outliers(data_df, col, finger_types):
-    # Outliers Analysis
+    """Calculate outliers, split by finger type."""
     outliers = {}
     for ft in finger_types:
         tmp_df = data_df[data_df[col['fltr']] == ft]
@@ -344,8 +356,7 @@ def calc_outliers(data_df, col, finger_types):
 
 
 def calc_summary(data_df, col, is_identification):
-    # Summary Data Analysis
-    # candidate length max/min analysis
+    """Calculate summary statistics of the data"""
     can_mets = pxc.candidate_length(
         data_df, col['pid'], col['rank'], is_identification)
     # calc total matches and non-matches
@@ -356,7 +367,7 @@ def calc_summary(data_df, col, is_identification):
 
 
 def get_data(truth_data_path, job_data_path, params):
-    # params = Params(analysis_path)
+    """Loads data from files and calculates results."""
 
     if truth_data_path is not None or truth_data_path == 'None':
         data_df, col, is_identification, errors = read_data(truth_data_path, job_data_path, {
@@ -390,6 +401,7 @@ def get_data(truth_data_path, job_data_path, params):
 
 
 def get(reload_data=False):
+    """Either calculates results or loads the results from pickle files."""
     doc_params = fetch_vars()
     base_path = os.path.splitext(doc_params['results_file'])[0]
     data_pkl = base_path+'_data_df.pkl'

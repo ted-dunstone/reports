@@ -9,6 +9,8 @@ from scipy import interpolate
 
 
 class Ac_Results:
+    """Class for handling accuracy results
+    """
     def __init__(self):
         self.roc_df = pd.DataFrame()
         self.threshold = None
@@ -19,6 +21,7 @@ class Ac_Results:
 
     def calc_roc_df(self, truth, scores):
         """
+        Calculates the roc curve data.
         truth : series or list of truth values
         scores : series or list of scores values
         """
@@ -32,12 +35,14 @@ class Ac_Results:
             self.set_auc()
 
     def set_auc(self):
+        """Assumes the roc_df is set"""
         self.auc = metrics.auc(self.roc_df['fpr'], self.roc_df['tpr'])
 
     def roc_create_func(self, x_col='fpr', y_col='tpr'):
         return interpolate.interp1d(self.roc_df[x_col], self.roc_df[y_col], kind='nearest', bounds_error=False)
 
     def calc_metrics(self, threshold):
+        """Calculates error rates at the threshold."""
         if (threshold <= self.roc_df['threshold'].max()) or (threshold >= self.roc_df['threshold'].min()):
             tpr_func = self.roc_create_func('threshold', 'tpr')
             fpr_func = self.roc_create_func('threshold', 'fpr')
@@ -49,6 +54,7 @@ class Ac_Results:
         return False
 
     def get_metrics(self):
+        """Returns threshold, error rates, and auc as a dictionary"""
         if self.threshold is not None:
             return {'threshold': self.threshold, 'fpr': '%2.2f' % (self.fpr_thresh*100), 'fnr': '%2.2f' % (self.fnr_thresh*100), 'tpr': '%2.2f' % (self.tpr_thresh*100), 'auc': self.auc}
         else:
@@ -79,7 +85,9 @@ class Ac_Results:
         return dictionary
 
     def adjust_for_gallery(self, num_probes, gallery_size, num_match, num_non_match):
-        """ Modify results to account for gallery size """
+        """ Modify the results to account for gallery size.
+        Assumes the roc_df has already been calculated or set.
+        """
 
         missing_nm_fraction = (num_probes*gallery_size -
                                num_probes)/num_non_match
@@ -128,7 +136,7 @@ def roc_calc(results, rank_col='rank', truth_col='truth', score_col='score', thr
 # Calculate CMC table
 def calc_CMC(data, total_count, rank_col='rank', score_col='score', truth_col='truth', threshold=None):
     """
-    Plot an CMC
+    Calculates the CMC data points.
     data : pandas dataframe
     total_count : total number of probes
     """
