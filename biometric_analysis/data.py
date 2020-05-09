@@ -125,7 +125,7 @@ def read_data_simple(score_data_path,
     ## rank = [item+1 for sublist in rank for item in sublist]
     ## score_data['rank'] = rank
 
-    score_data.to_csv('output.csv')
+    # score_data.to_csv('output.csv')
 
     # build rank
     #  raise ValueError(str(score_data[['score',"match"]]))
