@@ -1,308 +1,476 @@
-# items to be configured
+# % Performix Reporting Specification
+# % 12 May 2020
+
+# # Introduction
+# This document provides an example YAML file for processing data into Performix md
+# The output is after processing with [pandoc](pandoc.org) to generates a full report
+# pdf, docx or pptx
+
+# ## Variables
+# The first section defines variables that can be used within the rest of the yaml file.
+#
+# These variables are substituted by using {{variable}} in the yaml specification. 
+# Variables are defined with a - first to indicate this is a list, this allows variables
+# to use other variables as part of calculations.
+# 
+# 
+import:
+    - analysis_base
+
 variables:
-    - blah: 122
-    - key: 34
     - value_columns: ('matches','quality')
-    - unique_ids: for key in df['identifier'].unique()
-    - build_val: "{blah}+{key}"
-    - threshold: 500
-    - test_params: 
-        matches:
-            value: test_params
-            value2: test_params2
-            threshold: 500
-        quality:
-            threshold: 0
-            value: test_params1
-            value2: test_params2
-            threshold: 40
+    - select_match_threshold: 25
+    - impostor_match_threshold: 280
+    - quality_threshold: 20
+    - date_range:
+        start: 2018-09-01
+        end: 2020-03-01
+    - date_zoom:
+        start: 2019-10-15
+        end: 2020-01-01
             
 
-## END ###
+# # Document Meta data
 
-# meta data for the document construction
-meta:
-    output_type: md
-    # Main Parameters
-    title: Enrollment Issues Simprint
-    subtitle:  Design and Usage Information for Techncial Users
+# This section defined meta data for the document construction it will be sent as part of the document construction
+# each document section can have its own doc_meta section to redefine the output - for instance to output a presentation.
+doc_meta:
+    output_type: latex
+    # Key Doc Parameters
+    title: Simprint Biometric Analysis
+    subtitle:  Fingerprint Analysis from {{date_range.start.strftime('%B %Y')}} to {{date_range.end.strftime('%B %Y')}}
     author: Biometix
-    date: 5th March 2020
+    date: 14th May 2020
     keywords: '[analytics]'
+    geometry: a4paper
     # Personal Params
     contact: Ted Dunstone
     contact_phone: +61 (2) 419990968
     contact_email: ted@biometix.com
-    classification: Commercial in Confidential
-    # Report Specific Params
-
-    customer: Biometix
-    query: 123
+    classification: Commercial in Confidence
+    output:
+        main:
+            toc: true
+            toc-depth: 3
+            number-sections: true 
+            listings: true
+            standalone: true 
+            #include-in-header: /Users/dunstone/dev/px-build-doc/px_build_doc/data/listings.tex
+            #template: /Users/dunstone/dev/px-build-doc/px_build_doc/data/my-pandoc.latex
+            pdf-engine: xelatex 
+            quiet: true
+            slide-level: 2
+            reference-doc: template.potx
     
+
+
+# # Data
+# Define the data sources.
+# These should input from a results of a Performix ETL. Although external data sources are allowable.
+# [] Future data sources will have more configurability.
+
 data:
-    - histogram_catagorical:
-        fields: bin,sum(count) as total, identifier
-        table: _hist
+    histogram_catagorical:
+        fields: bin,sum(count) as total, identifier # The items to be reeturned
+        table: _hist # the table to fetch from
         query:  where identifier not in {{value_columns}} and identifier<>'' group by identifier,bin order by total desc;
-    - histogram_continuous:
+    histogram_continuous:
         fields: bin,sum(count) as total, identifier
         table: _hist
         query: where identifier in {{value_columns}} group by identifier,bin order by total;
-    - enroller_location:
+    enroller_location:
         fields: m.pid,gid,max(score) as maxs,enrollerid,count(1) as total,location
         table: match m,enrolment e 
-        query: where m.pid=e.pid and m.pid<>gid and score>300 group by m.pid,gid,enrollerid,location having count(1)>1 order by total desc;
-    - enroller_date:
+        query: where m.pid=e.pid and m.pid<>gid and score>{{impostor_match_threshold}} group by m.pid,gid,enrollerid,location having count(1)>1 order by total desc;
+    enroller_date:
         fields: substr(time,0,11) as date, count(1) as total
         table: enrolment 
         query: group by date order by date
-    - stats_fingers:
-        fields: count(1) as total,avg(score) as mean,instance as bin
-        table: match 
-        query: group by instance
-    - stats_fingers_quality:
-        fields: count(1) as total,avg(quality) as mean,finger as bin
-        table:  _quality 
-        query: group by finger
-        
+    enrollerid_user:
+        fields: enrollerid as User,count(1) as total 
+        table: enrolment
+        query: group by enrollerid
+    matches_enroller:
+        fields: enrollerid as User, substr(m.pid,0,15) as Probe_id,substr(gid,0,15) as Gallery_id,score as Score,substr(time,0,11) as Date
+        table: match m,enrolment e 
+        query: where m.pid=e.pid and m.pid<>gid order by score desc limit 100;            
+    matches_histogram:     
+        query: |
+            select 5*round(score/5) as bin,count(1) as total,"matches" as identifier, 
+            CASE truth WHEN 1 THEN "Match" ELSE "Non-match" END as truth 
+            from (select score, pid=gid as truth from match) group by bin,truth
+    zoo:     
+        query: |
+            select m.pid,avg(score) as score, count(1) as total,location,enrollerid,
+            CASE truth WHEN 1 THEN "Match" ELSE "Non-match" END as truth 
+            from (select score,pid, pid=gid as truth from match) m, enrolment e
+            where m.pid=e.pid
+             group by m.pid,truth;
+    matches_likely_impostors:
+        query: |
+            select enrollerid as User,substr(m.pid,0,15) as Probe_id,substr(gid,0,15) as Gallery_id,
+            count(1) as Count,max(score) as Max_Score,min(score) as Min_Score
+            from match m,enrolment e 
+            where m.pid<>gid and m.pid=e.pid group by enrollerid,m.pid,gid 
+            having count(1)>4 and max(score)>{{impostor_match_threshold}} order by count(1) desc,max(score) desc;
+               
+# # Analysis
+# Defines all the analysis to be run. These are python processing supported by the Performix library.
 
-analysis:
-    enroller_date:
-        use_data: enroller_date
-        py: |
-            df['date']=pd.to_datetime(df['date'])
-            df=df.set_index('date').resample('W').sum()
-            ax=sns.lineplot(x=df.index, y="total", data=df, palette="rocket")
-            #ax.set(xticks=df.index.values)
-            #ax.xaxis.set_major_formatter(dates.DateFormatter("%d-%b-%Y"))
-            #ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
-            ax.grid(b=True, which='major',linestyle=':')
-        plot:
-            caption: Counts of enrollments versus dates with scores above {{threshold}}
-            labels: Enrolment Date, X Axis
-            height: 9
-    
-    histogram_catagorical:
-        use_data: histogram_catagorical
-        params: key, limit
-        py: |
-            data = df[df["identifier"]==key][:limit]
-            data = data[['bin','total']].rename(columns={'bin':key,'total':'total'})
-            ax=sns.barplot(x=key, y="total", data=data, palette="rocket")
-            #ax.set(yscale="log")
-            ax.ticklabel_format(style='plain', axis='y') #,useOffset=False)
-            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
-        plot:
-            caption: Counts of enrollments versus dates with scores above {{threshold}}
-            height: 9
+analysis:        
 
-    pie:
-        use_data: histogram_catagorical
-        params: key, limit
-        py: |
-            data = df[df["identifier"]==key]
-            data = data.sort_values('total', ascending = False)
-            df2 = data[:limit].copy()
-            df2 = pd.concat([df2, pd.DataFrame(data = {'bin': ['others'],'total' : [df['total'][limit:].sum()]})])        
-            df2.set_index('bin').plot.pie(y='total', figsize=(5, 5), autopct='%1.0f%%')
-        plot:
-            caption: Counts of enrollments versus dates with scores above {{threshold}}
-            height: 9
-    
-    pie_test:
-        params: limit
-        py: |
-            data = df.sort_values('total', ascending = False)
-            df2 = data[:limit].copy()
-            df2 = pd.concat([df2, pd.DataFrame(data = {'bin': ['others'],'total' : [df['total'][limit:].sum()]})])        
-            df2.set_index('bin').plot.pie(y='total', figsize=(5, 5), autopct='%1.0f%%', legend=False)
-        plot:
-            caption: This is a wow
-            height: 9
-        
-    histogram_continuous:
-        use_data: histogram_continuous
-        params: key,threshold
-        py: |
-            data = df[df["identifier"]==key]
-            data = data[['bin','total']].rename(columns={'bin':key,'total':'total'})
-            ax=sns.lineplot(x=key, y="total", data=data)
-            if threshold:
-                ax.axvline(x=threshold,linestyle='-.',color='red',label='threshold')
-            ax.set(yscale="log")
-            ax.set_ylabel('total (log scale)')
-            ax.grid(b=True, which='major',linestyle=':',alpha=0.5)
-        plot:
-            caption: Counts of enrollments versus dates with scores above {{threshold}}
-            height: 9        
-
-    Heat_map:
-        use_data: enroller_location
-        py: |
-            global df_heat
-
-            df_heat = (df
-                    .groupby('enrollerid')
-                    .filter(lambda x : len(x) > 0)
-                    .groupby(['enrollerid', 'location'])
-                    .size()
-                    .unstack()
-                    )
-            g = sns.heatmap(
-                df_heat, 
-                #square=True, # make cells square
-                cbar_kws= {'fraction' : 0.01}, # shrink colour bar
-                cmap='OrRd', # use orange/red colour map
-                linewidth=1 # space between cells
-            )
-        plot:
-            caption: From Caption
-            height: 9
-        table: 
-            caption: A categorical table
-            variable: df_heat
-
-    decision_tree:
+    performix_import_diag:
         uml: |
-            @startuml
-            skinparam shadowing false
-            skinparam foregroundColor #EEEEEE
+            :simprints cross matching;
 
-            start
+            partition Performix {
+            :matching data transformed and loaded;
+            
+            :modeling and analysis undertaken;
+            
+            :documents (reports/pdfs etc) created;
+            }
 
-            :full match of all data
-            //governance// procedures
-            in place that will ensure
-            that citizens rights are
-            protected (Biometix); 
+            :document delivery;
 
-            :import into Performix;
-
-            :modeling and analysis;
-
-            :producing report and presentation;
-
-            stop
-
-            @enduml
         plot:
-            caption: A new diagram
+            caption: Process flow for data analysis transformation
             height: 9
+
+
+## Each new document is preceded by three dashes "----". This starts a new document type.
+---
+
+# # Report
+# This section defines the report structure.
+
+# ## Report Metadata
+# This overides the metadata at the start meta command.
+doc_meta:
+    type: pdf
+    name: report.pdf
+    tmp: temp1
+    output:
+        main:
+            output: output.pdf
+            
+
+                                                
+# ## Report Sections
+# Provide the report contents. Each level is a document heading. Any YAML defined as a string or using the continuation character | is taken as markdown. If the YAML key ends with () 
+# then it is referred to as an analysis function. Analysis functions are provided params by using keys. 
 
 report:
     - Introduction: 
         - |
             
-            This report has been automatically produced using Performix. It provides two benefits:
-
-            1. once we have generated the flat comparison scores there are a lot of scripts and manual effort that go into setting the right thresholds for match/non-match, 
-            2. determining different ways to cluster the outputs, and extracting more specific trends or anomalous patterns that we should be sharing to our partners. 
+            This report provides an analysis of Simprints fingerprint enrollments and matching processes over the period {{date_range.start.strftime('%B %Y')}} to {{date_range.end.strftime('%B %Y')}}. It has been automatically produced using **Performix** through the extraction, 
+            import and load of anonymized score data produced by a cross-match of beneficiary data.
+            The report can be easily customized to suit particular customer requirements and can then be generated on demand or as scheduled.
             
-            Beneficiary
-            :   Someone enrolled into the Simprints database. Suppose Simprints is part of a maternal healthcare system, the beneficiaries would be the mothers who are receiving healthcare. We take their fingerprints, and assign them GUIDs (unique IDs). 
-            \vskip 0.1 cm
+            The principle benefits of this automated analysis are: 
 
-            User
-            :   Someone who uses Simprints' technology to enrol beneficiaries into the system and deliver services. So in the maternal healthcare example, a User would be a Health Worker who visits mothers and delivers services. Each user is assigned a unique pseudoUserId.
-            \vskip 0.1 cm
+            1. A full automated workflow, reducing the time required and effort to get to an analysis, importantly it also reduces the chance for analysis errors.
+            2. Extended analysis that leads to actionable outcomes - setting of the right thresholds for match/non-match, determining which users or enrollees are causing the most problems.
+            3. Identifying and highlighting fraud or other integrity issues.
+            4. Modelling and predicting trends or anomalous patterns 
+            5. Packaging reports and presentation for secure delivery to key stakeholders.
 
-            Module
-            :   A geographical area. We make the (okay-ish) assumption that beneficiaries are unlikely to move between modules. So, during identification or deduplication, we only compare fingerprints from within the same module (so that the total number of comparisons we make is not too large). Each module is assigned a unique pseudoModuleId.
-            \vskip 0.1 cm
+            \awesomebox{5pt}{\faFingerprint}{blue}{
+            This report provides analysis on the results from fingerprint matching. Performix will also handle a any modality such as face or voice. 
+            Customised plugins exist to extend the capability for fusion, risk or vulnerability analysis.  
+            }
 
-            See table \ref{features_table}.
-
-            | Function name | Description                    |
-            | ------------- | ------------------------------ |
-            | `help()`      | Display the help window.       |
-            | `destroy()`   | **Destroy your computer!**     |
-
-            Table: Performix Features \label{features_table}
-
-        #- an: decision_tree
-        - py: |
-            print("blah")
-        - Errors:
+            This report is focused on answering the question about which users (enrollers) might have been using their own fingers, rather than those of the beneficiaries. It also contains high level information about general quality and accuracy performance.
+            Specific recommended actions for review are listed in the conclusion.
+        - Data Statistics:
             - |
-                to_presentation
-                window
+                The data used for the analysis in this report had following overall statistics.
+# ## Call an analysis
+# To call a analysis use () at the end of the analysis name.
+# The following params are passed to the analysis.
+            - summary_stats_table():
+                use_data: stats_matches_overall
+                caption: Total rows of imported matching results
+            - The total matches includes all results both match and non-match. 
+            - summary_stats_table():
+                use_data: stats_matches
+                caption: Overall match statistics (above filtered threshold score of {{select_match_threshold}})
+            - summary_stats_table():
+                use_data: stats_non_matches
+                caption: Overall non-match statistics (above filtered threshold {{select_match_threshold}})
+            - | 
+                The tables above give overall statistics about the imported match and non-match data. 
+
+            - summary_stats_table():
+                use_data: stats_enrolments
+                caption: Counts of enrolled data.
+            - | 
+                The enrollers are also known as users (these are the individuals that undertake the enrolment or beneficiaries).
+        - Import process:
+            - The data pipeline for the production of this report is shown below.
+            - performix_import_diag():
+
             - |
-                Hello!
-            - Suberrors:
-                - Suberrors
-        - NewSection:
-            - Last section  
-    - Data:
-        - |
-            * **enrolments_for_biometix.csv** contains a list of all our beneficiaries. Their unique ID is guid, the user who enrolled them is pseudoUserId, the module (geographical area) in which they were enrolled is pseudoModuleId, and enrolmentTime (if not NULL) is the time at which they were enrolled.
-            * **user_guids_for_biometix.csv** contains a list of those GUIDs which correspond to users whose biometric data we happened to collect (note that this was not done for all users, and note that some users have been given multiple GUIDs because we accidentally registered them multiple times). For some subset of the users, we have also registered them as beneficiaries (as in we have given them guids that correspond to their own fingerprints). Note that we only have this data for some users and some users have been registered multiple times (i.e. been given multiple guids that correspond to their own fingerprints). For an initial analysis, where you're just trying to find duplicates, and nothing to do with trends that correspond to different users, you can just ignore this table. Note that for comparisons (more below), we have artificially treated each of these user-specific GUIDs as if they were enrolled in all modules.
-            * **quality_scores.csv** (compressed using GZIP) contains the quality scores for each of the fingerprint images we collected during registration. You can ignore sessionId, but for each guid, finger is LEFT_THUMB, LEFT_INDEX_FINGER, RIGHT_THUMB, or RIGHT_INDEX_FINGER, and quality is the quality score returned by our extractor.
-            * **comparisons** contains a bunch of CSVs (each compressed using GZIP) that contains pairwise comparisons of our beneficiaries' registered fingerprints. This was done module by module, so it only contains all pairs of GUIDs guid1 x guid2 where guid1 and guid2 are from within the same module (during registration, from table 1.) or if guid1 or guid2 are users (from table 2.). Note that all GUIDs have been stored as bytes, not as strings. I've given you sample code below to convert between bytes and GUID strings (in Python, but any language you use will have a Base 64 encoder/decoder, I'm sure). Our matcher is not finger agnostic, so left thumbs are only compared with left thumbs, left indices with left indices, and so on - the column finger specifies which finger is being compared (LEFT_THUMB, LEFT_INDEX_FINGER, RIGHT_THUMB, or RIGHT_INDEX_FINGER) and matchScore is the score returned by our matcher, where the higher the number, the more likely it is that those fingerprints belonged to the same person.
-       
-        - Meta Data: 
+                \notebox{During identification or de-duplication, only fingerprints from within the same module/location were cross matched (so that the total number of comparisons is reduced).}
+        - Local Glossary:
             - |
-                A data section
-            - pie_test():
-                limit: 3
-                after: this comes after
-                use_data: stats_fingers
+                The following are terms used specifically in this report. More general biometric terms are defined in the Glossary in the appendix.
+
+                Beneficiary
+                :   Someone enrolled into the Simprints database. Suppose Simprints is part of a maternal healthcare system, the beneficiaries would be the mothers who are receiving healthcare. The fingerprints are taken and they are then and assigned a GUIDs (unique IDs). 
+                \vskip 0.1 cm
+
+                User
+                :   Someone who uses Simprints' technology to enrol beneficiaries into the system and deliver services. In the maternal healthcare example, a User would be a Health Worker who visits mothers and delivers services. Each user is assigned a unique pseudoUserId.
+                \vskip 0.1 cm
+
+                Module
+                :   A geographical area. Each module is assigned a unique pseudoModuleId.
+                
+                \vskip 0.1 cm
+        - Enrolment or Matching Errors:
+            - |
+                \notebox{No data was processed as part of this report regarding processing or matching failures.}
+                
+    - Enrollment:
+        - Introduction:
+            - This section provides details on the enrolment process by breaking down the enrollment data for date, location and the enroller (user).
+        - Dates:
+            - The enrollment period covered by this report is from {{date_range.start.strftime('%d/%b/%y')}} to {{date_range.end.strftime('%d/%b/%y')}}. 
+            - enroller_date():
+                start_date: {{date_range.start}}
+                end_date: {{date_range.end}}
+                start_region: {{date_zoom.start}}
+                end_region: {{date_zoom.end}}
+                group: W
                 plot:
-                    caption: from dict
-                    height: 3
-
-            - pie_test():
-                limit: 24
-                use_data: stats_fingers_quality
+                    caption: Beneficiary enrollments over time grouped by week
+                    height: 6
+            - The specific date region from {{date_zoom.start.strftime('%d/%b/%y')}} to {{date_zoom.end.strftime('%d/%b/%y')}} is focused on below and expanded show enrollments per day.
+            - enroller_date():
+                start_date: {{date_zoom.start}}
+                end_date: {{date_zoom.end}}
+                annotation: Christmas 
+                a_date: 2019-12-30
+                group: D
                 plot:
-                    caption: my new cap 1
-                    height: 5
+                    caption: Beneficiary enrollments over time grouped by day
+                    height: 6
+            - Variation in enrollments corresponding to different days of the week (from {{date_zoom.start.strftime('%d/%b/%y')}} to {{date_zoom.end.strftime('%d/%b/%y')}}) is shown, including the peak enrolment number and date.
+        - Locations:
             - histogram_catagorical():
                 key: location
                 limit: 15
                 plot:
-                    caption: override caption
-            - pie:
-                key: location
-                limit: 10
+                    caption: The locations/moduleId's with the highest number of enrollments
+                    height: 7
+                    labels: moduleId (locations), enrolment count
+            - The 15 locations with the highest number of enrollments are shown.
+        - Users:
             - histogram_catagorical():
                 key: enrollerid
-                limit: 25
-            - pie():
-                key: enrollerid
-                limit: 10
-            - enroller_date():
-        - Match and Score Distributiuons: 
+                limit: 15
+                plot:
+                    caption: The users with the highest number of enrollments
+                    height: 7
+                    labels: users, enrollments count
+            - The 15 users with the highest number of enrollments are shown.
+        - Instances (fingers):
+            - pie_test():
+                limit: 5
+                use_data: stats_instance
+                plot:
+                    caption: Proportion of enrollments by finger type.
+                    height: 8     
+            - The proportion of enrollments by finger is shown.  The key to the figure is LEFT_THUMB = 4 , LEFT_INDEX_FINGER = 5, RIGHT_THUMB = 6, RIGHT_INDEX_FINGER = 7. 
+
+    - Quality:
+        - Introduction:
             - |
-                The following section provides an overiew of the match and quality distributions.
-            - an: histogram_continuous(key="matches",threshold={{threshold}})
-    {% for key,value in test_params.items() %}
-    - {{key.title()}}:
-        - subsection [{{value.value}}]
-        - an: histogram_continuous(key="{{key}}",threshold={{value.threshold}})
-    {% endfor %}
-    - Analysis: 
-        - |
-            A deeper look 
-            \warningbox{Should be a waring}
-        - an: Heat_map(_plot_caption="A map of the areas below")
-        
+                The following section provides an overview of the recorded quality data. 
+            - \notebox{For more detailed analysis the Performix quality analysis module (not enabled here) can be used to identify quality related issues and trends.}
+        - Quality Scores:
+            - The quality score used has been returned returned by the Simprints extractor.
+            - histogram_continuous():
+                key: quality
+                threshold: {{quality_threshold}}
+            - The quality threshold of {{quality_threshold}} is shown. This indicates where the quality score starts to drop off significantly.
+        - Fingerprint:
+            - pie_test():
+                limit: None
+                use_data: stats_fingers_quality
+                plot:
+                    caption: Proportion of finger types in the quality measurements data 
+                    height: 8     
+            - The proportion of enrollments by finger is shown.  It's expected that left and right thumbs will be more widely used due to being able to get a better quality acquisition.
+                    
+                    
+    - Accuracy and Score: 
+        - Introduction:
+            - |
+                The following section provides an overview of the match and non-match results.
+        - Score Histograms:
+            - histogram_continuous():
+                key: matches
+                threshold: {{select_match_threshold}}
+                plot:
+                    caption: All count of results binned by score
+                    height: 6
+            - The score histogram across the entire data set for both matches and non-matches. The red threshold line shows the score at which results above are filtered to be used for detailed analysis (below this threshold non-matches are considered as extremely different samples.)
+            - histogram_continuous():
+                use_data: matches_histogram
+                key: matches
+                threshold: {{impostor_match_threshold}}
+                hue: truth
+                plot:
+                    caption: Match and non-match histogram
+                    height: 6
+            - |
+                The score histogram shows all results above the filter threshold score of {{select_match_threshold}}. Results are split by matches and non-matches. 
+                The analysis of problem users or beneficiaries threshold is shown at a score of {{impostor_match_threshold}}.
+        - Accuracy Analysis:
+            - \notebox{For more detailed analysis the Performix accuracy analysis module (not enabled here) can provide help in assessing optimal thresholds and modelling the impact of any changes on fraud or workflow.}
+            - roc():
+                use_data: matches_histogram
+                key: matches
+                is_eer: True
+                plot:
+                    labels: score, percent
+                    caption: Match/non match rate graph, showing the percent of false accepts/rejects
+            - |
+                The match/non match shows the percentage of the matches versus non-matches for each score. The analysis of problem users or beneficiaries threshold is shown at a score of {{impostor_match_threshold}}.
+            - roc():
+                use_data: matches_histogram
+                key: matches
+                plot:
+                    labels: match rate (MR), false non-match-rate (FNMR)
+                    caption: ROC graph showing false-non-match rate vs match rate
+            - The ROC graph shows the accuracy of the matching analysis - noting that there maybe a variety of ground truth issues that affect the results.  
+        - Zoo plot:   
+            - The zoo graph shows the accuracy of the matching analysis - noting that there maybe a variety of ground truth issues affecting the results of this analysis. For more description see Appendix C.
+            - \notebox{For more detailed analysis the Performix zoo analysis module (not enabled here)  can be used to help identify and classify outliers.}  
+            - zoo():
+                use_data: zoo
+                #hue: enrollerid
+                plot:
+                    caption: Zoo plot where each point is represents a beneficiary
+                    height: 9
+                     
+    - Outliers:
+        - Introduction:
+            - | 
+                This section identifies anomalous users and beneficiaries that might require more investigation.
+        - High Scoring Non-Match Beneficiaries:
+            - |
+                The following analysis looks for non-matches outliers that score unusually high. 
+                It then analyses the users that enrolled these beneficiaries, to look for cases that might be users that are using there own biometric or miss-identifying the same beneficiaries under another identity.
+                These results may also be the result of two poorer quality fingerprints matching together. The analysis also shows the date of enrolment - where all enrollments have ocurred on the same day this is more likely to be an issue requiring investigation.
+            - match_outliers():
+                use_data: matches_enroller
+                plot_col: User
+                maxv: 20
+                warn_percent: 0.9
+                item_description: non-matches 
+                threshold: impostor_match_threshold
+                plot:
+                    caption: Highest non-match scores
+                    height: 7
+                table:
+                    caption: Highest non-match outliers
+                    
+
+        - Repeated Non-Matches by User:
+            - |
+                The following analysis looks for clusters of high scoring cases where the probe and gallery GUID's are duplicated in the results. This results in a count for each match pair of how many times it is found. 
+                It then analyses these high scoring cases to look for which users have enrolled these clusters. This should show cases that might be users that are using there own biometric, or multiply miss-identifying the same beneficiaries under another identity.
+                These results may also be the result of two poorer quality fingerprints matching together. 
+            - match_outliers():
+                use_data: matches_likely_impostors
+                plot_col: User
+                maxv: 20
+                warn_percent: 0.3
+                item_description: groups of non-matches (where probe_id and gallery_id were the same) 
+                threshold: impostor_match_threshold
+                plot:
+                    caption: Potential non-matches that may be matches
+                    height: 7
+                table:
+                    caption: Repeated non-matches by user outliers
+            - Extended Analysis:
+                - scatter():
+                    use_data: matches_likely_impostors
+                    x: Max_Score
+                    y: Min_Score
+                    markers: Count
+                    hue: User
+                    plot:
+                        caption: Scatter plot of potential non-matches that may be matches
+                        height: 7
+                - The further to the top right of this graph the more likely it that a beneficiary has been enrolling the wrong identities or themselves.
+                - heat_map():
+                    plot:
+                        caption: High non-matching results by location
+                - The heat map shows very high non-matching results by location and user.
+                
+            
+
     - Conclusion:
         - |        
-            In conclusion this is the end of the report.
+            This report has in particular examined outliers of non-matches. The following cases for further investigation have been detected.
+        - conclusion():
+        - References:
+            - |
 
-            [**Duns2008**] Dunstone, T. and Yager, N., 2008. Biometric system and data analysis: Design, evaluation, and data mining. Springer Science & Business Media.
+                [**Duns2008**] Dunstone, T. and Yager, N., 2008. Biometric system and data analysis: Design, evaluation, and data mining. Springer Science & Business Media.
+                
+                [**ISO/IEC 19795-6:2012**] Biometric performance testing and reporting — Part 6: Testing methodologies for operational evaluation 
 
-            \appendix
-            \section*{Appendices}
-            \addcontentsline{toc}{section}{Appendices}
-    - Appendix:
-        - Imported from file 
-        - file: 300_Latex_Extras.md
+                \appendix
+                \section*{Appendices}
+                \addcontentsline{toc}{section}{Appendices}
 
-presentation:
-    - Introduction: |
-        blah
-    - Middle: wow
-    - Conclusion:
-        - This is the conclusion
+    - Outliers:
+        - High Scoring Non-matches:
+            - The highest non-matches outliers.
+            - show_data_print():
+                use_data: matches_enroller
+                max_len: 60
+        - High Scoring Non-matching groups:
+            - The highest scoring cases where the same probe and gallery GUID's are found mutliple times in the results. This results in a count for each match pair of how many times it is found.
+            - show_data_print():
+                use_data: matches_likely_impostors
+                max_len: 60
+    - Data:
+        - The data provided for this testing analysis is shown below;
+        - enrolments_for_biometix.csv:
+            - This file contains a list of beneficiaries. Their unique ID is guid, the user who enrolled them is pseudoUserId, the module (geographical area) in which they were enrolled is pseudoModuleId, and enrolmentTime (if not NULL) is the time at which they were enrolled.
+        - user_guids_for_biometix.csv:
+            - This file contains a list of those GUIDs which correspond to users whose biometric data we happened to collect (note that this was not done for all users, and note that some users have been given multiple GUIDs because we accidentally registered them multiple times). For some subset of the users, we have also registered them as beneficiaries (as in we have given them guids that correspond to their own fingerprints). Note that we only have this data for some users and some users have been registered multiple times (i.e. been given multiple guids that correspond to their own fingerprints). For an initial analysis, where you're just trying to find duplicates, and nothing to do with trends that correspond to different users, you can just ignore this table. Note that for comparisons (more below), we have artificially treated each of these user-specific GUIDs as if they were enrolled in all modules.
+        - quality_scores.csv:
+            - This file contains the quality scores for each of the fingerprint images we collected during registration. For each guid, finger is LEFT_THUMB, LEFT_INDEX_FINGER, RIGHT_THUMB, or RIGHT_INDEX_FINGER, and quality is the quality score returned by our extractor.
+        - comparisons*.csv:
+            - These files contain CSVs that contains pairwise comparisons of our beneficiaries' registered fingerprints. This was done module by module, so it only contains all pairs of GUIDs guid1 x guid2 where guid1 and guid2 are from within the same module (during registration, from table 1.) or if guid1 or guid2 are users (from table 2.). Note that all GUIDs have been stored as bytes, not as strings. I've given you sample code below to convert between bytes and GUID strings (in Python, but any language you use will have a Base 64 encoder/decoder, I'm sure). Our matcher is not finger agnostic, so left thumbs are only compared with left thumbs, left indices with left indices, and so on - the column finger specifies which finger is being compared (LEFT_THUMB, LEFT_INDEX_FINGER, RIGHT_THUMB, or RIGHT_INDEX_FINGER) and matchScore is the score returned by our matcher, where the higher the number, the more likely it is that those fingerprints belonged to the same person.            
+        - file: terminology.md
+
+# # Presentation
+# You can also define diferent document types such as presentations.
+
+#---
+
+#doc_meta:
+#    type: pdf
+#    name: report.pdf
+#    tmp: temp2
+#    output:
+#        main:
+#            output: test.pptx
+              
+#presentation:
+#    - Introduction:
+#        - blah
+#    - Middle: 
+#        - wow
+#    - Conclusion:
+#        - This is the conclusion
     
