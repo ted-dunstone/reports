@@ -1,0 +1,282 @@
+
+data:
+    stats_instance:
+        fields: count(1) as total,avg(score) as mean,instance as bin
+        table: match 
+        query: group by instance
+    stats_matches_overall:
+        fields: sum(count) as Total_Matches
+        table: _hist
+        query:  where identifier="matches";
+    stats_non_matches:
+        fields: |
+            count(1) as total_analysis_non_matches, 
+            count(distinct pid) total_unique_probe_ids, 
+            count(distinct gid) total_unique_gallery_ids,
+            min(score) minimum_score,
+            max(score) maximum_score 
+        table: match 
+        query: where pid<>gid
+    stats_matches:
+        fields: |
+            count(1) as total_analysis_matches, 
+            count(distinct pid) total_unique_probe_ids, 
+            count(distinct gid) total_unique_gallery_ids,
+            min(score) minimum_score,
+            max(score) maximum_score 
+        table: match 
+        query: where pid=gid
+    stats_enrolments:
+        fields: count(1) as total_enrolments,count(distinct enrollerid) as total_enrollers, count(distinct location) as total_locations
+        table: enrolment 
+    stats_fingers_quality:
+        fields: count(1) as total,avg(quality) as mean,finger as bin
+        table:  _quality 
+        query: group by finger
+
+analysis:
+    summary_stats_table:
+        params: caption
+        py: |
+            df = df.transpose().reset_index().rename(columns={'index':'Statistic',0:'Value'})
+            df['Statistic']=df['Statistic'].str.replace('_',' ').str.title() 
+            df['Value'] = df.apply(
+                lambda x:"{:,}".format(int(x["Value"])) if float(x["Value"]).is_integer() else "{:.4}".format(x["Value"]),
+                axis=1)          
+            tables.read_df(df).display(caption,colalign=("left","right"))
+    enroller_date: # this defines the function enroller_date
+        use_data: enroller_date
+        params: [start_date, end_date, group, start_region, end_region, annotation, a_date, agg] # By default use this data source
+        py: |
+            df['date']=pd.to_datetime(df['date'])
+            df=df.set_index('date').resample(group)
+            if agg == 'mean':
+                df=df.mean()
+            else:
+                df=df.sum()
+            if start_date and end_date:
+                df=df.loc[start_date:end_date]
+            ax=sns.lineplot(x=df.index, y="total", data=df,color='blue') #, palette="rocket")
+
+            if annotation and a_date:
+                spx_max_ = df["total"].max()
+                spx_max_idx_ = df["total"].idxmax(axis=0, skipna=True)
+
+                max_pnt=df.max()
+                bbox_props = dict(boxstyle="round4, pad=0.6", fc="lightblue", ec="b", lw=.5)
+                ax.annotate('Global Max = {}\nDate = {}'.format(spx_max_, spx_max_idx_.strftime('%a, %Y-%m-%d')),
+                    fontsize=9,fontweight='bold',
+                    xy=(spx_max_idx_, spx_max_), xycoords='data',xytext=(-150, -70),textcoords='offset points',
+                    arrowprops=dict(facecolor='black'), bbox=bbox_props) 
+
+            if start_region:
+                ax.axvspan(start_region, end_region, color='lightgrey', alpha=0.2)
+            #ax.set(xticks=df.index.values)
+            #ax.xaxis.set_major_formatter(dates.DateFormatter("%d-%b-%Y"))
+            plt.xticks(
+                rotation=45, 
+                horizontalalignment='right',
+                fontweight='light',
+                #fontsize='x-large'  
+            )
+            plt.tight_layout()
+            ax.grid(b=True, which='major',linestyle=':')
+        plot:
+            caption: Counts of enrollments versus dates with scores above threshold
+            labels: date, enrolment count 
+    
+    histogram_catagorical:
+        use_data: histogram_catagorical
+        params: key, limit
+        py: |
+            data = df[df["identifier"]==key][:limit]
+            data = data[['bin','total']].rename(columns={'bin':key,'total':'total'})
+            ax=sns.barplot(x=key, y="total", data=data, facecolor=(1, 1, 1, 0), edgecolor="blue")
+            #ax.set(yscale="log")
+            ax.ticklabel_format(style='plain', axis='y') #,useOffset=False)
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
+        plot:
+            caption: Counts of enrollments versus dates with scores above threshold
+
+    pie:
+        use_data: histogram_catagorical
+        params: [key, limit]
+        py: |
+            data = df[df["identifier"]==key]
+            data = data.sort_values('total', ascending = False)
+            df2 = data[:limit].copy()
+            df2 = pd.concat([df2, pd.DataFrame(data = {'bin': ['others'],'total' : [df['total'][limit:].sum()]})])        
+            df2.set_index('bin').plot.pie(y='total', figsize=(5, 5), autopct='%1.0f%%')
+        plot:
+            caption: Counts of enrollments versus dates with scores above threshold
+    
+    pie_test:
+        params: [limit]
+        py: |
+            #if limit:
+            #    data = df.sort_values('total', ascending = False)
+            #    df2 = data[:limit].copy()
+            #    df2 = pd.concat([df2, pd.DataFrame(data = {'bin': ['others'],'total' : [df['total'][limit:].sum()]})])
+            #    df = df2        
+            df.set_index('bin').plot.pie(y='total', figsize=(5, 5), autopct='%1.0f%%', legend=False)
+        plot:
+            caption: Pie chart
+        
+    histogram_continuous:
+        use_data: histogram_continuous
+        params: [key,threshold,hue]
+        py: |
+            data = df[df["identifier"]==key]
+            data = data.rename(columns={'bin':key,'total':'total'})
+            ax=sns.lineplot(x=key, hue=hue, y="total", data=data)
+            if threshold:
+                ax.axvline(x=threshold,linestyle='-.',color='red',label='threshold')
+            ax.set(yscale="log")
+            ax.set_ylabel('total (log scale)')
+            ax.grid(b=True, which='major',linestyle=':',alpha=0.5)
+        plot:
+            caption: Counts of enrollments versus dates with scores above threshold
+    roc:
+        use_data: histogram_continuous
+        params: [key,threshold,is_eer]
+        py: |
+            #data = df[df["identifier"]==key]
+            
+            def norm(k,direction):
+                j=100.0*k['total']/sum(k['total'])
+                if not direction:
+                  return j[::-1].cumsum()[::-1]
+                return j.cumsum()
+            
+            new=[]
+            for v in ["Match","Non-match"]:
+                sel=df[df['truth']==v].copy()
+                sel['fraction']=norm(sel,v=="Match")
+                new.append(sel)
+            res=pd.concat(new)
+            if not is_eer:
+                rocdata=res.pivot(index='bin',columns='truth',values='fraction')
+                #raise_error(str(rocdata))
+
+                ax=sns.lineplot(x=rocdata["Non-match"],y=1-rocdata["Match"],data=rocdata)
+                ax.set(xscale="log")
+            else:
+                ax=sns.lineplot(x='bin',y='fraction',hue='truth',data=res)
+            ax.grid(b=True, which='major',linestyle=':',alpha=0.5)
+        plot:
+            caption: ROC plot
+    zoo:
+        use_data: zoo
+        params: [hue]
+        py: |
+            data=df.pivot(index='pid',columns='truth',values='score')
+            sns.scatterplot(x=data["Non-match"],y=data["Match"],hue=hue,data=df)
+        plot:
+            format: png
+            labels: Average User Match Score, Average User Non-match Score
+
+    heat_map:
+        use_data: enroller_location
+        py: |
+            global df_heat
+
+            df_heat = (df
+                    .groupby('enrollerid')
+                    .filter(lambda x : len(x) > 0)
+                    .groupby(['enrollerid', 'location'])
+                    .size()
+                    .unstack()
+                    )
+            g = sns.heatmap(
+                df_heat, 
+                #square=True, # make cells square
+                cbar_kws= {'fraction' : 0.01}, # shrink colour bar
+                cmap='OrRd', # use orange/red colour map
+                linewidth=1 # space between cells
+            )
+        plot:
+            caption: From Caption
+    scatter:
+        params: [x,y,size,hue,markers]
+        py: |
+            x = sns.scatterplot(x=x, y=y, markers=markers, size=size, hue=hue,palette="Set2",data=df)
+
+    show_data_print:
+        params: [max_len]
+        py: |
+            print(r"\footnotesize")
+            print("```python")
+            print(str(df.head(max_len)))
+            print("```")
+            print
+            print(r"\normalsize")
+
+    match_outliers:
+        params: [maxv,plot_col,user_description,warn_percent,no_graph,threshold]
+        py: |
+            global df_outliers
+            global worst_performers
+            if plot_col:
+                if not no_graph:
+                    ax = sns.countplot(y=plot_col, data=df)
+                users=df[plot_col].value_counts().to_frame()
+                all_users=get_df('enrollerid_user').set_index('User')
+                worst_performers = users.join(all_users,lsuffix='_caller', rsuffix='_other').rename({'User':'over_threshold'})
+                worst_performers['percent']=100*worst_performers['User']/worst_performers['total']
+                worst_performers.sort_values(by='percent',inplace=True,ascending=False)
+                if no_graph:
+                    print("```python")
+                    print(str(worst_performers))
+                    print("```")
+                    print
+
+            df_outliers = df.head(maxv)
+        after_py: |
+            global worst_performers
+            if plot_col:
+                above_percent = 0.2
+                wp = worst_performers[worst_performers['percent']>=above_percent]
+                display(f"""
+                    The sub-sections below show the {len(wp)} top cases by ordered by percentage of match. High scores are considered a score over {threshold}. 
+                    The proportion of total is calculated as scores over the lower filter score, as those below this score are extremely poor matches. 
+                    Where the proportion is above {warn_percent}% a warning is shown.
+
+                    """)
+                for label, content in wp.iterrows():
+                    print('### %s'%label.replace('_',' '))
+                    results = df[df[plot_col]==label].drop_duplicates()
+                    display(f"""
+                    For user {label} there were {len(results)} {item_description} that had high scores.
+                    In total this user had {int(content["total"])} matches above the lower threshold. This corresponds to
+                    {content["percent"]:.2f} % of the cases for this user being in the high category.
+                    """)
+                    print(r"\footnotesize")
+                    display("```")
+                    display(str(results))
+                    display("```")
+                    print(r"\normalsize")
+
+                    if 'Max_Score' in results:
+                        if len(results['Max_Score'].unique())!=len(results):
+                            print(r"\warningbox{Multiple groupings with same max score. This likely indicates duplicate entries.}")
+                            set_observation("Multiple Max Score",label)
+                    if 'Date' in results:
+                        if len(results['Date'].unique())!=len(results):
+                            print(r"\warningbox{Multiple groupings with same date. This maybe a re-enrollment of the same individual.}")
+                            set_observation("Multiple Date",label)
+                    if content["percent"]>warn_percent:
+                        print(r"\awesomebox{3pt}{\faSearch}{blue}{")
+                        print(r"User has a very high proportion of matches and should be investigated.")
+                        print(r"}")
+                        set_observation("Likely Impostors",label)
+
+        table: 
+            caption: Outliers
+            variable: df_outliers
+
+    conclusion:
+        py: |
+            for key,items in observations.items():
+                print("* "+key + "(%d)"%len(items))
+                for item in items:
+                    print("  * "+item)
