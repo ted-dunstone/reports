@@ -1,4 +1,4 @@
-# % Performix Reporting Specification
+# Simprints Analysis Report - large data demonstration
 # % 12 May 2020
 
 # # Introduction
@@ -17,18 +17,48 @@
 import:
     - analysis_base
 
+type: Report
+
 variables:
     - value_columns: ('matches','quality')
     - select_match_threshold: 25
     - impostor_match_threshold: 280
-    - quality_threshold: 20
+    - quality_threshold: 0.5
     - date_range:
-        start: 2018-09-01
+        start: 2018-07-22
         end: 2020-03-01
     - date_zoom:
         start: 2019-10-15
         end: 2020-01-01
+    - temp: wow2
             
+config:
+    - Name: Title
+      Views: <input type="text" name="doc_meta.title" minlength=3>
+      Description: Examine all FTEs doc_meta.title
+    - Name: Date
+      Views: <input type="date" id="start" name="doc_meta.date" value="2018-07-22" min="2018-01-01" max="2022-12-31">
+      Description: Examine all FTEs variables.date_range.start
+    - Name: Email
+      Views: <input type="email" name="doc_meta.contact_email">
+      Description: Hello doc_meta.contact_email
+    - Name: Bool
+      Views: |
+        <select name="doc_meta.output.main.quiet">
+        <option value="True">True</option>
+        <option value="False">False</option>
+        </select>
+      Description: Blah
+    - Name: Bool2
+      Views: |
+        <select name="doc_meta.classification">
+        <option value="Commercial-in-Confidence">Commercial-in-Confidence</option>
+        <option value="Option2">Option2</option>
+        <option value="Option3">Option3</option>
+        </select>
+      Description: Blah
+ 
+      
 
 # # Document Meta data
 
@@ -37,31 +67,31 @@ variables:
 doc_meta:
     output_type: latex
     # Key Doc Parameters
-    title: Simprint Biometric Analysis
+    title: Matts Test
     subtitle:  Fingerprint Analysis from {{date_range.start.strftime('%B %Y')}} to {{date_range.end.strftime('%B %Y')}}
     author: Biometix
-    date: 14th May 2020
+    date: 2018-02-01
     keywords: '[analytics]'
     geometry: a4paper
     # Personal Params
     contact: Ted Dunstone
     contact_phone: +61 (2) 419990968
     contact_email: ted@biometix.com
-    classification: Commercial in Confidence
+    classification: Commercial-in-Confidence
+    threshold: 0.5
     output:
         main:
             toc: true
             toc-depth: 3
-            number-sections: true 
+            number-sections: true
             listings: true
-            standalone: true 
+            standalone: true
             #include-in-header: /Users/dunstone/dev/px-build-doc/px_build_doc/data/listings.tex
             #template: /Users/dunstone/dev/px-build-doc/px_build_doc/data/my-pandoc.latex
-            pdf-engine: xelatex 
-            quiet: true
+            pdf-engine: xelatex
+            quiet: False
             slide-level: 2
             reference-doc: template.potx
-    
 
 
 # # Data
